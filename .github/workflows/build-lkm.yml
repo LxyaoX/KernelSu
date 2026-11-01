@@ -22,13 +22,11 @@ jobs:
   build-lkm:
     strategy:
       matrix:
-        # 6.1 and newer only: the 5.10 / 5.15 targets added four DDK container builds
-        # for kernels this project no longer ships.
+        # android14-6.1 only. The 6.6 / 6.12 / 6.18 targets were dropped together with
+        # every kernel feature behind them: ksud embeds whatever this matrix produces,
+        # so one entry here is what "this build supports one kernel series" means.
         kmi:
           - android14-6.1
-          - android15-6.6
-          - android16-6.12
-          - android17-6.18
     uses: ./.github/workflows/ddk-lkm.yml
     with:
       kmi: ${{ matrix.kmi }}

@@ -22,10 +22,9 @@ cd "$REPO_ROOT"
 # --------------------------------------------------------------------------- #
 # Defaults (every one of these can be overridden from the environment)
 # --------------------------------------------------------------------------- #
-# A single-KMI local build serves only that KMI; late-load/boot-patch will fail
-# on other KMIs. Use a CI release package (pack_lkm: true, full KMI matrix) for
-# all-KMI support, or widen KMIS here.
-KMIS="${KMIS:-android15-6.6}"
+# This tree supports one GKI series, android14-6.1: late-load and boot-patch refuse
+# any other kernel, so widening this list only produces modules nothing can load.
+KMIS="${KMIS:-android14-6.1}"
 ABIS="${ABIS:-arm64-v8a}"
 DDK_RELEASE="${DDK_RELEASE:-20260828}"       # .github/workflows/ddk-lkm.yml default
 ANDROID_API_LEVEL="${ANDROID_API_LEVEL:-26}" # same as .github/scripts/setup-rust-build.sh
@@ -320,7 +319,7 @@ steps:
   all      lkm -> nomount -> ksuinit -> ksud -> apk -> repack
 
 environment overrides:
-  KMIS=android15-6.6        kernel modules to build
+  KMIS=android14-6.1        kernel modules to build (the only supported series)
   ABIS=arm64-v8a            ABIs for ksud + repack
   DDK_RELEASE=20260828      DDK image release tag
   ANDROID_API_LEVEL=26      cargo-ndk api level

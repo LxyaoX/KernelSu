@@ -173,7 +173,7 @@ private fun MissingCard(
     actions: HomeActions,
     modifier: Modifier,
 ) {
-    val notInstalled = state.kernelVersion.isGKI()
+    val notInstalled = state.kernelVersion.isSupportedSeries()
     val reason = stringResource(
         if (notInstalled) R.string.home_click_to_install else R.string.home_unsupported_reason
     )

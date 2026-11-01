@@ -18,7 +18,7 @@ import java.util.zip.GZIPInputStream
 
 /**
  * Mirrors ksud's parse_kmi_from_boot: touches only the boot header plus the
- * kernel block to find the KMI (e.g. "android15-6.6").
+ * kernel block to find the KMI (e.g. "android14-6.1").
  */
 object BootKernelVersion {
     private const val BOOT_MAGIC = "ANDROID!"

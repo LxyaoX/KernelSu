@@ -41,28 +41,27 @@ data class RekernelXStatus(
     companion object {
         private const val PROBE_PREFIX = "rkx:"
 
+        /** The one kernel series this build carries a driver for. */
+        private const val SUPPORTED_CORE = "6.1"
+
         /**
          * `android<ver>-<core>` for a `uname -r` release, mirroring the upstream `customize.sh`.
          *
          * Release names look like `6.1.75-android14-11-gabcdef` (GKI) or `6.1.75-android14-9`.
-         * Non-GKI names fall back to the core-version table, which only covers the 6.1+ builds
-         * shipped in the assets.
+         * Only [SUPPORTED_CORE] is recognised: the assets carry one driver and ksud embeds one
+         * module, both `android14-6.1`, so any other core returns an empty kmi and the UI reports
+         * the kernel as unsupported instead of naming a driver that cannot be loaded.
          */
         fun kmiOf(release: String): String {
             val trimmed = release.trim()
             if (trimmed.isEmpty()) return ""
             val core = trimmed.substringBefore('-').substringBeforeLast('.')
             if (core.count { it == '.' } != 1) return ""
+            if (core != SUPPORTED_CORE) return ""
             val android = if (trimmed.contains("-android")) {
                 trimmed.substringAfter("-android").substringBefore('-')
             } else {
-                when (core) {
-                    "6.1" -> "14"
-                    "6.6" -> "15"
-                    "6.12" -> "16"
-                    "6.18" -> "17"
-                    else -> ""
-                }
+                "14"
             }
             if (android.isEmpty() || android.toIntOrNull() == null) return ""
             return "android$android-$core"

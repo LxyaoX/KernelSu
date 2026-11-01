@@ -10,23 +10,24 @@ class RekernelXStatusTest {
     private fun probe(vararg lines: String) = lines.joinToString("\n")
 
     @Test
-    fun `a GKI release maps to the android tag and the core version`() {
+    fun `a 6_1 GKI release maps to the android tag and the core version`() {
         assertEquals("android14-6.1", RekernelXStatus.kmiOf("6.1.75-android14-11-gabcdef"))
-        assertEquals("android15-6.6", RekernelXStatus.kmiOf("6.6.30-android15-8-g1234-ab"))
-        assertEquals("android16-6.12", RekernelXStatus.kmiOf("6.12.23-android16-5-gdeadbeef"))
-        assertEquals("android17-6.18", RekernelXStatus.kmiOf("6.18.3-android17-2-gfeedface"))
     }
 
     @Test
-    fun `a release without an android tag falls back to the core version table`() {
+    fun `a release without an android tag falls back to the 6_1 core version`() {
         assertEquals("android14-6.1", RekernelXStatus.kmiOf("6.1.75"))
-        assertEquals("android16-6.12", RekernelXStatus.kmiOf("6.12.30"))
     }
 
     @Test
-    fun `a core version with no bundled build still reports its own kmi`() {
-        // Not "unsupported" by itself: kmiSupported is decided by the assets, not by this parse.
-        assertEquals("android14-6.5", RekernelXStatus.kmiOf("6.5.10-android14-8-gabc"))
+    fun `every other kernel series reports no kmi`() {
+        // One driver and one embedded module exist, both android14-6.1: naming a kmi here
+        // would only make the UI offer a build that cannot be loaded.
+        assertEquals("", RekernelXStatus.kmiOf("6.6.30-android15-8-g1234-ab"))
+        assertEquals("", RekernelXStatus.kmiOf("6.12.23-android16-5-gdeadbeef"))
+        assertEquals("", RekernelXStatus.kmiOf("6.18.3-android17-2-gfeedface"))
+        assertEquals("", RekernelXStatus.kmiOf("6.12.30"))
+        assertEquals("", RekernelXStatus.kmiOf("6.5.10-android14-8-gabc"))
     }
 
     @Test

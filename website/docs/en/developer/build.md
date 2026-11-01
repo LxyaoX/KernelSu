@@ -130,7 +130,7 @@ Check `dist/` when it finishes. The final APK should contain the `ksud` from thi
 ### Kernel Module
 
 ```sh
-KMIS="android14-6.1 android15-6.6" ./build.sh lkm nomount
+KMIS="android14-6.1" ./build.sh lkm nomount
 ```
 
 This step builds and stages `kernelsu.ko` and `nomount.ko` for the given KMIs. The DDK image name comes from:
@@ -185,7 +185,7 @@ But only `repack` writes the current release `ksud` into the official artifact. 
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `KMIS` | `android15-6.6` | space-separated KMI list |
+| `KMIS` | `android14-6.1` | space-separated KMI list (the only supported one) |
 | `ABIS` | `arm64-v8a` | target ABIs for `ksud` and the APK |
 | `DDK_RELEASE` | `20260828` | DDK image tag |
 | `ANDROID_API_LEVEL` | `26` | Rust Android API level |
@@ -197,28 +197,21 @@ But only `repack` writes the current release `ksud` into the official artifact. 
 
 ::::
 
-::: danger A Local Build Is Not All-KMI by Default
+::: danger One Kernel Series Only
 
-`KMIS` defaults to `android15-6.6` only. A single ordinary local build does not automatically produce drivers for every device. A full release should use the CI KMI matrix, or pass the full `KMIS` explicitly.
+This tree supports `android14-6.1` and nothing else: the module ksud embeds, the bundled ReKernel-X driver, and the `boot-patch` / late-load checks all recognise that series alone. Pointing `KMIS` at 6.6 / 6.12 / 6.18 produces a module no code path can load, and patching reports "unsupported kernel series" instead.
 
 :::
 
 ## Target Matrix
 
-CI currently builds the following KMIs:
+CI builds exactly one KMI:
 
 ```text
-android12-5.10
-android13-5.10
-android13-5.15
-android14-5.15
 android14-6.1
-android15-6.6
-android16-6.12
-android17-6.18
 ```
 
-Current CI Manager targets include `ksud` builds for `arm64-v8a`, `x86_64` and `riscv64`. Sui and YukiZygisk have no `riscv64` payload; the current KernelSU/NoMount module release matrix targets aarch64 and x86_64.
+`build-lkm.yml` has a single matrix entry, and the `kernelsu.ko` / `nomount.ko` ksud embeds come from it alone. The manager ships one `ksud` for `arm64-v8a`; the 6.6 / 6.12 / 6.18 targets are gone along with the rest of the multi-series support.
 
 ## Local vs CI Differences
 
@@ -263,7 +256,7 @@ Check the APK certificate against the trust slot of the current kernel. A custom
 
 ### Only one KMI is available
 
-Check `KMIS`. The local default builds only `android15-6.6`; that is by design, not an automatic probe of every device.
+Check the kernel version. This tree supports `android14-6.1` only, so another series fails at `boot-patch` with `unsupported kernel series`; that is by design.
 
 ### The Manager build is missing `libksud.so`
 

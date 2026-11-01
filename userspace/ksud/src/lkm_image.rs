@@ -1081,9 +1081,12 @@ fn recover_gki_abi(
         parts.next().is_some_and(|tail| !tail.is_empty()),
         "kernel release has no patch version"
     );
+    // One series only: the embedded module is `android14-6.1_kernelsu.ko`, so a kernel from
+    // another series has nothing to link against. Failing here names the series; failing later
+    // would only report a missing embedded file.
     ensure!(
-        matches!((major, minor), (6, 1 | 6 | 12 | 18)),
-        "unsupported GKI kernel series {major}.{minor}; this build covers 6.1 and newer (6.1, 6.6, 6.12, 6.18)"
+        matches!((major, minor), (6, 1)),
+        "unsupported kernel series {major}.{minor}; only android14-6.1 (Linux 6.1) is supported"
     );
     let abi = match btf {
         Some(btf) => GKI_ABI.apply_btf(btf)?,

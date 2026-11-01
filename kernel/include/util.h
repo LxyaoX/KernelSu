@@ -14,15 +14,16 @@
 #include "arch.h"
 
 /*
- * This branch targets GKI kernels 6.1 and newer only - the Android 14 generation
- * and later. Everything below that (5.10, 5.15, the 4.x Android trees) has been
- * dropped rather than kept behind an #if: it is not tested, not built, and the
- * compat arms it needed were the only reason several of these files had version
- * branches at all. Building for one of them should fail loudly here instead of
- * producing a module that loads and then misbehaves.
+ * This branch targets one GKI series: android14-6.1. Everything else has been
+ * dropped rather than kept behind an #if - 5.10, 5.15 and the 4.x Android trees
+ * below it, and 6.6 / 6.12 / 6.18 above it. None of them is built, tested or
+ * shipped: the manager carries an android14-6.1_kernelsu.ko, ksud embeds that one
+ * file, and its late-load path refuses any other series before it patches a boot
+ * image. Building elsewhere should fail loudly here instead of producing a module
+ * that loads and then misbehaves.
  */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
-#error "FinaSU targets GKI kernels 6.1 and newer; there is no support path below 6.1"
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+#error "FinaSU targets android14-6.1 only; no other GKI series is supported"
 #endif
 
 #if defined(__aarch64__)

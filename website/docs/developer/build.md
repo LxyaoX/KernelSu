@@ -130,7 +130,7 @@ cp manager/sign.example.properties manager/keystore.properties
 ### 内核模块
 
 ```sh
-KMIS="android14-6.1 android15-6.6" ./build.sh lkm nomount
+KMIS="android14-6.1" ./build.sh lkm nomount
 ```
 
 这一步会为指定 KMI 构建并暂存 `kernelsu.ko` 与 `nomount.ko`。DDK 镜像名来自：
@@ -185,7 +185,7 @@ cp userspace/ksud/target/aarch64-linux-android/release/ksud \
 
 | 变量 | 默认值 | 作用 |
 | --- | --- | --- |
-| `KMIS` | `android15-6.6` | 空格分隔的 KMI 列表 |
+| `KMIS` | `android14-6.1` | 空格分隔的 KMI 列表（只有这一个受支持） |
 | `ABIS` | `arm64-v8a` | `ksud` 与 APK 的目标 ABI |
 | `DDK_RELEASE` | `20260828` | DDK 镜像 tag |
 | `ANDROID_API_LEVEL` | `26` | Rust Android API level |
@@ -197,28 +197,21 @@ cp userspace/ksud/target/aarch64-linux-android/release/ksud \
 
 ::::
 
-::: danger 本地默认不是全 KMI
+::: danger 只支持一个内核系列
 
-`KMIS` 默认只有 `android15-6.6`。只跑一次普通本地构建，不会自动获得所有设备的驱动。完整发布应使用 CI 的 KMI 矩阵，或显式提供完整 `KMIS`。
+本树只支持 `android14-6.1`：`ksud` 内嵌的模块、ReKernel-X 的驱动、以及 `boot-patch` / late-load 的校验都只认这一个系列。把 `KMIS` 改成 6.6 / 6.12 / 6.18 只会产出一份没有任何代码路径能加载的模块，打补丁时会直接报「unsupported kernel series」。
 
 :::
 
 ## 目标矩阵
 
-当前 CI 构建以下 KMI：
+当前 CI 只构建一个 KMI：
 
 ```text
-android12-5.10
-android13-5.10
-android13-5.15
-android14-5.15
 android14-6.1
-android15-6.6
-android16-6.12
-android17-6.18
 ```
 
-当前 CI 管理器目标包括 `arm64-v8a`、`x86_64` 和 `riscv64` 的 `ksud` 构建。Sui 与 YukiZygisk 没有 `riscv64` 载荷；KernelSU/NoMount 模块发布矩阵当前针对 aarch64 与 x86_64。
+`build-lkm.yml` 的矩阵只有这一项，`ksud` 内嵌的 `kernelsu.ko` 与 `nomount.ko` 也只来自它。管理器只发布 `arm64-v8a` 的 `ksud`；6.6 / 6.12 / 6.18 的构建目标已随其余内核系列一起移除。
 
 ## 本地与 CI 的差异
 
@@ -263,7 +256,7 @@ android17-6.18
 
 ### 只有一个 KMI 可用
 
-检查 `KMIS`。本地默认值只构建 `android15-6.6`，这是设计行为，不是自动探测所有设备。
+检查内核版本。本树只支持 `android14-6.1`，别的系列会在 `boot-patch` 时报 `unsupported kernel series`，这是设计行为。
 
 ### 管理器构建缺少 `libksud.so`
 

@@ -17,7 +17,7 @@
     <string name="home_lkm_update_available">내장 LKM의 새 버전을 사용할 수 있습니다. 탭하여 업데이트하세요.</string>
     <string name="home_lkm_custom">사용자 지정</string>
     <string name="home_unsupported">지원되지 않음</string>
-    <string name="home_unsupported_reason">KernelSU는 현재 GKI 커널만 지원합니다.</string>
+    <string name="home_unsupported_reason">이 빌드는 android14-6.1(Linux 6.1)만 지원하며, 이 커널용 모듈은 없습니다.</string>
     <string name="home_device_model">기기 모델</string>
     <string name="home_kernel">커널 버전</string>
     <string name="home_kernel_full_version">커널 빌드</string>
@@ -407,7 +407,7 @@
     <string name="module_shortcut_permission_tip_default">바로가기 생성에 실패하면 시스템 설정에서 이 앱의 바탕 화면 바로가기 권한을 활성화하세요.</string>
     <string name="no_such_module">%s 모듈이 존재하지 않습니다</string>
     <string name="module_unavailable">%s 모듈이 비활성화되었거나 업데이트 중이거나 제거 대기 중입니다</string>
-    <string name="select_file_tip_nogki">패치할 GKI 기기 이미지 파일을 선택하세요!</string>
+    <string name="select_file_tip_nogki">android14-6.1(Linux 6.1) 부팅 이미지만 패치할 수 있습니다.</string>
     <string name="current_device_kmi">이 기기의 KMI</string>
     <string name="show_only_primary_user_apps">기본 사용자 앱만 표시</string>
     <string name="settings_auto_jailbreak">자동 탈옥</string>

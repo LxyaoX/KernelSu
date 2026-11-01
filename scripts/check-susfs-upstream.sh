@@ -6,7 +6,7 @@ SELF_DIR=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(dirname "$SELF_DIR")
 
 EXPECTED_COMMIT=4a4cb1be85a4694372d3efb9420de69982eac29a
-DEFAULT_KMI=android15-6.6
+DEFAULT_KMI=android14-6.1
 
 usage() {
     cat <<'EOF'
@@ -16,7 +16,7 @@ Checks a pinned SUSFS patch set against this checkout.
 
   --upstream DIR       Checkout of the SUSFS patch repository
   --kernel-source DIR  Pristine kernel source for the selected KMI
-  --kmi KMI            Kernel KMI (default: android15-6.6)
+  --kmi KMI            Kernel KMI (default: android14-6.1)
   -h, --help           Show this help
 
 Inside an Android DDK image, --kernel-source defaults to /opt/ddk/src/<KMI>.

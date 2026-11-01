@@ -125,7 +125,8 @@ count.
 
 ## Open items
 
-- `android17-6.18` is in FinaSU's KMI matrix but is not in upstream's test
+- `android17-6.18` was in this fork's KMI matrix until the tree dropped every series
+  but `android14-6.1`; it is not in upstream's test
   matrix; compiling NoMount for it is unverified.
 - Upstream's LKM workflow strips page-pinner symbols from the DDK headers before
   building; the same workaround is needed here.

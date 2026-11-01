@@ -33,22 +33,17 @@ copyright:
 
 ## LKM 支持范围
 
-可以先把 KMI 理解为“内核与驱动之间的接口版本”。它不是 Android 系统版本，也不能只看内核版本号。官方 release 的预构建 LKM 当前覆盖以下 KMI：
+可以先把 KMI 理解为“内核与驱动之间的接口版本”。它不是 Android 系统版本，也不能只看内核版本号。本版只构建、只发布**一个** KMI：
 
-| Android 基线 | 内核版本 |
-| --- | --- |
-| Android 12 | 5.10 |
-| Android 13 | 5.10、5.15 |
-| Android 14 | 5.15、6.1 |
-| Android 15 | 6.6 |
-| Android 16 | 6.12 |
-| Android 17 | 6.18 |
+| Android 基线 | 内核版本 | KMI |
+| --- | --- | --- |
+| Android 14 | 6.1 | `android14-6.1` |
 
-对应目录名为 `android12-5.10`、`android13-5.10`、`android13-5.15`、`android14-5.15`、`android14-6.1`、`android15-6.6`、`android16-6.12` 和 `android17-6.18`。
+其余系列（5.10、5.15、6.6、6.12、6.18）都已移除：内核模块在编译期直接 `#error`，`ksud` 内嵌的只有 `android14-6.1_kernelsu.ko`，`boot-patch` 对其它系列报 `unsupported kernel series`。
 
 支持范围还要同时满足以下条件：
 
-- **架构**：官方预构建驱动支持 `arm64-v8a` 和 `x86_64`。riscv64 没有 LKM 驱动资产，不能只靠安装管理器获得 Root。
+- **架构**：官方预构建驱动只有 `arm64-v8a`。x86_64 与 riscv64 都没有 LKM 驱动资产，不能只靠安装管理器获得 Root。
 - **KMI**：设备实际 KMI 必须与目录名完全一致。Android 版本相邻或内核版本相近都不能代替 KMI 匹配。
 - **启动方式**：实体设备通常需要解锁 Bootloader（开机时加载 Android 的引导程序），并能修补、刷入管理器识别出的启动分区；模拟器等环境以管理器提供的对应镜像流程为准。
 - **系统状态**：安装前移除其他内核级 Root 方案，避免多个驱动同时接管启动链。
@@ -97,28 +92,22 @@ copyright:
 核心修补过程等价于下面的命令，普通用户不需要手动执行：
 
 ```sh
-ksud boot-patch -b boot.img -m android15-6.6_kernelsu.ko
+ksud boot-patch -b boot.img -m android14-6.1_kernelsu.ko
 ```
 
 省略 `-m` 时，`ksud` 会根据当前设备和输入镜像等可用信息自动确定 KMI，并使用自身内嵌的匹配驱动。管理器实际执行时还会指定输出文件、目标分区等参数；上面的命令只展示核心修补过程。不要把 LKM 放进 `/data/adb/modules/`，也不要尝试用普通 `insmod` 开机脚本代替启动镜像修补。
 
 ### 驱动文件从哪里来
 
-FinaSU release 会提供 `FinaSU_<tag>_kernel-bundle.zip`，其中包含 arm64 与 x86_64 各个 KMI 的驱动和 `ksud`：
+FinaSU release 会提供 `FinaSU_<tag>_kernel-bundle.zip`，其中包含 arm64 的驱动和 `ksud`：
 
 ::: file-tree title="kernel-bundle.zip"
 
 - FinaSU_\<tag\>_kernel-bundle.zip
   - arm64/
-    - android15-6.6_kernelsu.ko
-    - ...
-  - x86_64/
-    - android15-6.6_kernelsu.ko
-    - ...
+    - android14-6.1_kernelsu.ko
   - ksud/
     - android-arm64
-    - android-x86_64
-    - ...
 
 :::
 
@@ -126,7 +115,7 @@ FinaSU release 会提供 `FinaSU_<tag>_kernel-bundle.zip`，其中包含 arm64 �
 
 ::: warning 本地 LKM 不是通用文件
 
-一个 `android15-6.6_kernelsu.ko` 只适用于对应 KMI。架构或 KMI 不匹配可能导致驱动无法加载；驱动内置的管理器签名不匹配时，驱动即使加载成功，管理器也不会把它识别为可管理状态。
+一个 `android14-6.1_kernelsu.ko` 只适用于 android14-6.1。架构或 KMI 不匹配可能导致驱动无法加载；驱动内置的管理器签名不匹配时，驱动即使加载成功，管理器也不会把它识别为可管理状态。
 
 :::
 
@@ -243,13 +232,13 @@ printf 'size=%s\nhash=%s\n' "$cert_size" "$cert_hash"
 
 ### 自己构建 LKM
 
-这是维护者流程，普通安装不需要执行。需要 Docker 和目标 KMI 对应的 DDK 镜像，FinaSU 默认只构建 `android15-6.6`：
+这是维护者流程，普通安装不需要执行。需要 Docker 和 `android14-6.1` 对应的 DDK 镜像；这也是唯一受支持的 KMI：
 
 ```sh
-KMIS=android15-6.6 ./build.sh lkm
+KMIS=android14-6.1 ./build.sh lkm
 ```
 
-产物为 `kernel/android15-6.6_kernelsu.ko`，同时暂存到 `userspace/ksud/bin/aarch64/` 供 `ksud` 打包。一次本地构建只覆盖 `KMIS` 中列出的 KMI；需要支持多台设备或完整发布矩阵时，应使用 CI 生成的 kernel bundle。
+产物为 `kernel/android14-6.1_kernelsu.ko`，同时暂存到 `userspace/ksud/bin/aarch64/` 供 `ksud` 打包。把 `KMIS` 换成别的系列只会得到一份没有代码路径能加载的模块。
 
 ## 验证
 

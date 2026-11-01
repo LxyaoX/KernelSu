@@ -66,13 +66,10 @@ echo "-- NoMount architecture: $NOMOUNT_ARCH"
 case "$NOMOUNT_ARCH" in
 x86_64)
     unset ARCH CROSS_COMPILE
-    kmi=$(basename "$KDIR")
+    # The single supported series (android14-6.1) builds through `src=`, the way the
+    # 6.1..6.12 kernels do; only 6.18 needed `MO=`.
     build_root="$KDIR"
-    if [ "$kmi" = android17-6.18 ]; then
-        output_args="MO=$build_dir"
-    else
-        output_args="src=$build_dir"
-    fi
+    output_args="src=$build_dir"
     toolchain_args=""
     ;;
 *)

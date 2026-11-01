@@ -8,9 +8,9 @@ import stat
 import subprocess
 
 
-KMIS = ['android12-5.10', 'android13-5.10', 'android13-5.15',
-        'android14-5.15', 'android14-6.1', 'android15-6.6',
-        'android16-6.12', 'android17-6.18']
+# The tree supports one series. The 5.10..5.15 kernels needed the legacy modpost
+# arguments and 6.18 needed `MO=`; both branches went away with them.
+KMIS = ['android14-6.1']
 root = Path(__file__).resolve().parents[3]
 tests = Path(__file__).resolve().parent
 
@@ -68,10 +68,7 @@ ccflags-y += -DYZ_EXIT_HAS_GROUP_DEAD
 endif
 ''' + namespace, newline='\n')
     modpost = '/probe/modpost-tool/modpost'
-    if kmi in KMIS[:4]:
-        modpost += ' -m -e -i $KDIR/Module.symvers -o /probe/Module.symvers'
     command = ('bash /probe/prepare_modpost.sh && make -C "$KDIR" M=/probe '
-               + ('MO=/probe ' if kmi == KMIS[-1] else '')
                + f'ARCH=arm64 LLVM=1 CC=clang MODPOST="{modpost}" modules '
                + '&& cp "$KDIR/arch/arm64/boot/Image" /probe/Image')
     invoke(['docker', 'run', '--rm', '--pull=never', '--entrypoint', 'bash',

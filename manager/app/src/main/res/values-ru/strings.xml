@@ -17,7 +17,7 @@
     <string name="home_lkm_update_available">Доступна новая версия встроенного LKM. Нажмите, чтобы обновить.</string>
     <string name="home_lkm_custom">Пользовательский</string>
     <string name="home_unsupported">Не поддерживается</string>
-    <string name="home_unsupported_reason">Теперь KernelSU поддерживает только ядра GKI, однако вы всё ещё можете пропатчить образ для GKI-устройств.</string>
+    <string name="home_unsupported_reason">Эта сборка поддерживает только android14-6.1 (Linux 6.1); модуля для этого ядра нет.</string>
     <string name="home_device_model">Модель устройства</string>
     <string name="home_kernel">Версия ядра</string>
     <string name="home_kernel_full_version">Сборка ядра</string>
@@ -409,7 +409,7 @@
     <string name="module_shortcut_permission_tip_default">Если создание ярлыка не удалось, пожалуйста, включите разрешение на создание ярлыков на рабочем столе для этого приложения в системных настройках.</string>
     <string name="no_such_module">Модуль %s не существует</string>
     <string name="module_unavailable">Модуль %s отключен, обновляется или ожидает удаления</string>
-    <string name="select_file_tip_nogki">Пожалуйста, выберите файл образа GKI устройства, который вы хотите пропатчить</string>
+    <string name="select_file_tip_nogki">Патчить можно только загрузочные образы android14-6.1 (Linux 6.1).</string>
     <string name="current_device_kmi">KMI этого устройства</string>
     <string name="show_only_primary_user_apps">Показывать только приложения основного пользователя</string>
     <string name="settings_auto_jailbreak">Автоматический Jailbreak</string>

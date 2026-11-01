@@ -793,7 +793,7 @@ suspend fun getDefaultPartition(): String = withContext(Dispatchers.IO) {
         val cmd = "boot-info default-partition"
         ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} $cmd").trim()
     } else {
-        // Every supported kernel is GKI 6.1 or newer, i.e. Android 14 and later, where the ramdisk
+        // The only supported kernel is android14-6.1, i.e. Android 14, where the ramdisk
         // lives in init_boot. The old "android12- means boot" guess is gone with those kernels.
         "init_boot"
     }

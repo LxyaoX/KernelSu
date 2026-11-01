@@ -9,8 +9,8 @@ connect to Android devices.
   It checks continuation arguments, packet handoff and failed-load fd cleanup.
 - `python3 userspace/zygisk/tests/run_endpoint_kernel_tests.py --out /tmp/yz-endpoint`
   builds the production endpoint backend as a test-only module and runs both
-  userspace ABIs against every supported GKI. Use `--kmi android17-6.18` to select
-  one kernel. It needs Docker's full DDK images, both GNU cross compilers and
+  userspace ABIs against the one supported GKI, `android14-6.1` (`--kmi` is still
+  accepted and takes only that value). It needs Docker's full DDK images, both GNU cross compilers and
   `qemu-system-aarch64`. On Windows, compilers and QEMU run in the selected WSL
   distribution. Results, exact backend hashes and logs are saved under `--out`.
 

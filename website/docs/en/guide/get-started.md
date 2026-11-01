@@ -44,7 +44,13 @@ Think of the KMI as the interface version between the kernel and the driver. It 
 | Android 16 | 6.12 |
 | Android 17 | 6.18 |
 
-The corresponding directory names are `android12-5.10`, `android13-5.10`, `android13-5.15`, `android14-5.15`, `android14-6.1`, `android15-6.6`, `android16-6.12` and `android17-6.18`.
+This build produces exactly one KMI:
+
+| Android baseline | Kernel | KMI |
+| --- | --- | --- |
+| Android 14 | 6.1 | `android14-6.1` |
+
+Every other series (5.10, 5.15, 6.6, 6.12, 6.18) is gone: the kernel module hits an `#error` at build time, `ksud` embeds only `android14-6.1_kernelsu.ko`, and `boot-patch` answers `unsupported kernel series` for the rest.
 
 The following conditions must also hold:
 
@@ -97,28 +103,22 @@ The Manager patches the boot image: it puts `ksuinit` and the `kernelsu.ko` matc
 The core patch is equivalent to the command below; ordinary users do not need to run it by hand:
 
 ```sh
-ksud boot-patch -b boot.img -m android15-6.6_kernelsu.ko
+ksud boot-patch -b boot.img -m android14-6.1_kernelsu.ko
 ```
 
 When `-m` is omitted, `ksud` determines the KMI from available information such as the current device and the input image, and uses its own embedded matching driver. When the Manager actually runs it, it also passes parameters such as the output file and target partition; the command above shows only the core patch. Do not put the LKM into `/data/adb/modules/`, and do not try to replace boot image patching with a plain `insmod` boot script.
 
 ### Where the Driver Files Come From
 
-A FinaSU release provides `FinaSU_<tag>_kernel-bundle.zip`, which contains the driver for each KMI on arm64 and x86_64 plus `ksud`:
+A FinaSU release provides `FinaSU_<tag>_kernel-bundle.zip`, which contains the arm64 driver plus `ksud`:
 
 ::: file-tree title="kernel-bundle.zip"
 
 - FinaSU_\<tag\>_kernel-bundle.zip
   - arm64/
-    - android15-6.6_kernelsu.ko
-    - ...
-  - x86_64/
-    - android15-6.6_kernelsu.ko
-    - ...
+    - android14-6.1_kernelsu.ko
   - ksud/
     - android-arm64
-    - android-x86_64
-    - ...
 
 :::
 
@@ -126,7 +126,7 @@ For installation on a real device, prefer the complete release assets built into
 
 ::: warning A Local LKM Is Not Interchangeable
 
-One `android15-6.6_kernelsu.ko` only fits the matching KMI. An architecture or KMI mismatch can stop the driver from loading; if the Manager signature built into the driver does not match, the Manager will not treat it as manageable even when the driver does load.
+One `android14-6.1_kernelsu.ko` only fits android14-6.1. An architecture or KMI mismatch can stop the driver from loading; if the Manager signature built into the driver does not match, the Manager will not treat it as manageable even when the driver does load.
 
 :::
 
@@ -243,13 +243,13 @@ Full kernel-side documentation is in [Kernel Integration](/en/developer/builtin-
 
 ### Building the LKM Yourself
 
-This is a maintainer flow and is not needed for a normal install. It requires Docker and the DDK image for the target KMI; FinaSU builds only `android15-6.6` by default:
+This is a maintainer flow and is not needed for a normal install. It requires Docker and the `android14-6.1` DDK image, which is the only supported KMI:
 
 ```sh
-KMIS=android15-6.6 ./build.sh lkm
+KMIS=android14-6.1 ./build.sh lkm
 ```
 
-The output is `kernel/android15-6.6_kernelsu.ko`, staged as well into `userspace/ksud/bin/aarch64/` for `ksud` to package. One local build covers only the KMIs listed in `KMIS`; when you need several devices or the full release matrix, use the kernel bundle produced by CI.
+The output is `kernel/android14-6.1_kernelsu.ko`, staged as well into `userspace/ksud/bin/aarch64/` for `ksud` to package. Pointing `KMIS` at another series only produces a module no code path can load.
 
 ## Verification
 

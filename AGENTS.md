@@ -87,7 +87,9 @@ Key constraints:
 
 - `lkm`/`nomount` need Docker (DDK images `ghcr.io/ylarod/ddk-min:<kmi>-<DDK_RELEASE>`); `ksud`/`ksuinit` need cargo + the Android NDK; `apk` needs a JDK.
 - Keep the NDK at r29 (`NDK_VERSION=29.0.14206865`); newer NDKs break the static ksuinit link.
-- A local `lkm` run builds only the `KMIS` you list - late-load/boot-patch fail on other KMIs. Use a CI release package for the full KMI matrix.
+- One KMI only: `android14-6.1`. `KMIS` exists but nothing else is supported - `kernel/include/util.h`
+  `#error`s on any other series, ksud embeds only `android14-6.1_kernelsu.ko`, and `boot-patch`
+  refuses the rest. A local `lkm` run for another KMI produces a module no code path can load.
 - Signing comes from `manager/keystore.properties`; `build.sh` also derives the second trusted manager cert size/sha256 and bakes it into the kernel build.
 - Overrides via env: `KMIS`, `ABIS`, `DDK_RELEASE`, `ANDROID_API_LEVEL`, `KSUD_BUILD_TYPE`, `APP_BUILD_TYPE`, `OUT_DIR`, `KEYSTORE_PROPS` (see `./build.sh --help`).
 
@@ -95,7 +97,9 @@ Key constraints:
 
 ### Kernel (`kernel/`)
 
-- The module targets **GKI 6.1 and newer** only (Android 14 onward). `kernel/include/util.h` fails the build below 6.1 with an `#error`, so the 5.10/5.15 compatibility arms were deleted rather than kept behind an `#if` - if you port code from elsewhere, drop its pre-6.1 branches too.
+- The module targets **android14-6.1** only (Linux 6.1, the Android 14 generation). `kernel/include/util.h`
+  `#error`s outside 6.1.x in both directions, so the 5.10/5.15 arms below it and the 6.6/6.12/6.18 arms
+  above it are dead: if you port code from elsewhere, drop its other-series branches too.
 - Kernel changes are C-only; keep interfaces aligned with supercall and allowlist expectations in userspace/Manager.
 - If you alter IOCTLs or profiles, update the corresponding wrappers in ksud (`ksucalls.rs`) and Manager JNI (`manager/app/src/main/cpp/ksu.cc`).
 

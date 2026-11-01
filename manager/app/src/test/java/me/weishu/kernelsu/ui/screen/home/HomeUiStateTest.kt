@@ -26,7 +26,7 @@ class HomeUiStateTest {
     }
 
     private fun state(rootStatus: RootShellStatus) = HomeUiState(
-        kernelVersion = KernelVersion(6, 6, 118),
+        kernelVersion = KernelVersion(6, 1, 75),
         ksuVersion = 32750,
         managerUAPIVersion = 5,
         kernelUAPIVersion = 5,

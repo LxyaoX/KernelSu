@@ -73,18 +73,18 @@ fun InstallScreen() {
     val defaultPartition by produceState(initialValue = "") { value = getDefaultPartition() }
     val rootAvailable by produceState(initialValue = false) { value = rootAvailable() }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
-    val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
+    val isSupportedKernel by produceState(initialValue = false) { value = getKernelVersion().isSupportedSeries() }
 
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
     val anyKernelSummary = stringResource(R.string.install_anykernel_summary)
-    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, downloadFileMsg, anyKernelSummary) {
+    val installMethodOptions = remember(rootAvailable, isAbDevice, isSupportedKernel, selectFileTip, selectFileTipNoGki, downloadFileMsg, anyKernelSummary) {
         buildList {
-            add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
+            add(InstallMethod.SelectFile(summary = if (isSupportedKernel) selectFileTip else selectFileTipNoGki))
             add(InstallMethod.DownloadFile(summary = downloadFileMsg))
             if (rootAvailable) add(InstallMethod.AnyKernel(summary = anyKernelSummary))
-            if (rootAvailable && isGkiDevice) {
+            if (rootAvailable && isSupportedKernel) {
                 add(InstallMethod.DirectInstall)
                 if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
             }
@@ -235,7 +235,7 @@ fun InstallScreen() {
     ) {
         if (it.resultCode == Activity.RESULT_OK) {
             it.data?.data?.let { uri ->
-                installMethod = InstallMethod.SelectFile(uri, summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki)
+                installMethod = InstallMethod.SelectFile(uri, summary = if (isSupportedKernel) selectFileTip else selectFileTipNoGki)
             }
         }
     }

@@ -30,7 +30,7 @@ FinaSU provides:
 
 ## Requirements
 
-- An arm64-v8a Android device on a GKI kernel **6.1 or newer** - the Android 14 generation and later. Older kernels (5.10, 5.15, the 4.x trees) are not supported: the module refuses to build for them, and the manager says so instead of offering an install.
+- An arm64-v8a Android device on **android14-6.1** (Linux 6.1, the Android 14 generation). It is the one kernel series this tree ships: the module refuses to build for anything else, ksud embeds a single `android14-6.1_kernelsu.ko`, and the manager says so instead of offering an install.
 - Installation via LKM (a loadable `kernelsu.ko`), a patched boot image, or an AnyKernel3 package
 
 ## Manager

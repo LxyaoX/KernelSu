@@ -97,11 +97,12 @@ curl -s https://api.github.com/repos/LyraVoid/FinaSU/releases/latest |
   gitignored, and are staged by CI before `ksud` is compiled: modules in `ddk-lkm.yml`, the payload in
   `ksud.yml`. Whatever is not staged is silently absent from the APK.
 - The manager ships `arm64-v8a` only (`abiFilters` in `manager/app/build.gradle.kts`) and the LKM
-  matrix in `build-lkm.yml` covers `android14-6.1`, `android15-6.6`, `android16-6.12` and
-  `android17-6.18`. There is no x86_64 or riscv64 artifact to miss, and no second mount engine to fall
-  back to: a device without a matching driver gets nothing injected and the manager says so.
+  matrix in `build-lkm.yml` has exactly one entry, `android14-6.1`: this tree supports one GKI
+  series, and ksud refuses to patch any other kernel. There is no x86_64 or riscv64 artifact to
+  miss, and no second mount engine to fall back to: a device on another series gets nothing
+  injected and the manager says so.
 - Release assets are the APK and `FinaSU_<tag>_kernel-bundle.zip`. The zip contains `arm64/` with
-  the four KMI `kernelsu.ko` files plus `ksud/android-arm64`. Other build outputs stay on the run
+  the single `android14-6.1_kernelsu.ko` plus `ksud/android-arm64`. Other build outputs stay on the run
   page as workflow artifacts, and GitHub attaches the tag's source archives, which also keeps the
   source available for the licenses bundled into the payload.
 - Users in LKM mode see "A newer bundled LKM is available. Tap to update." on Home whenever the

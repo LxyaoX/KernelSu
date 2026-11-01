@@ -13,13 +13,16 @@ data class KernelVersion(val major: Int, val patchLevel: Int, val subLevel: Int)
     }
 
     /**
-     * Whether this kernel is one the manager supports at all: GKI 6.1 and newer, which is the
-     * Android 14 generation onward. Everything older (5.10, 5.15, the 4.x trees) is out of scope -
-     * the kernel module refuses to build for it, so asking the user to install anything there would
-     * only lead to a module that cannot load.
+     * Whether this kernel is one the manager supports at all: `android14-6.1`, i.e. Linux 6.1.
+     *
+     * One series, not "6.1 and newer". The APK carries a single `android14-6.1_kernelsu.ko`, ksud
+     * embeds that same file, and `boot-patch` refuses any other series - so on a 6.6 / 6.12 / 6.18
+     * kernel there is nothing to install, and saying so is better than offering an install that
+     * ends in "unsupported kernel series". The kernel module enforces the same window with an
+     * `#error` for both bounds.
      */
-    fun isGKI(): Boolean {
-        return major > 6 || (major == 6 && patchLevel >= 1)
+    fun isSupportedSeries(): Boolean {
+        return major == 6 && patchLevel == 1
     }
 }
 

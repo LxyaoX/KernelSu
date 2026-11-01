@@ -2,9 +2,10 @@
 
 set -e
 
-KMIS=(android14-6.1 android15-6.6 android16-6.12 android17-6.18)
-CLANGS=(clang-r487747c clang-r510928 clang-r536225 clang-r584948c)
-RUSTS=(none none rust-1.82.0 rust-1.91.1.p3)
+# android14-6.1 only; the 6.6 / 6.12 / 6.18 kernels are gone from this tree.
+KMIS=(android14-6.1)
+CLANGS=(clang-r487747c)
+RUSTS=(none)
 
 
 for i in "${!KMIS[@]}"; do
@@ -49,9 +50,6 @@ for i in "${!KMIS[@]}"; do
 
     make "O=$KDIR" gki_defconfig
     scripts/config --file "$KDIR/.config" -d LTO_CLANG -e LTO_NONE -d LTO_CLANG_THIN -d LTO_CLANG_FULL -d THINLTO
-    if [ "$kmi" == "android16-6.12" ] || [ "$kmi" == "android17-6.18" ]; then
-        scripts/config --file "$KDIR/.config" -e CONFIG_CFI_ICALL_NORMALIZE_INTEGERS
-    fi
     make "O=$KDIR" modules_prepare
     # Let Kbuild generate the SELinux headers in this x86 output tree.
     make "O=$KDIR" security/selinux/built-in.a

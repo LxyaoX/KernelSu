@@ -16,8 +16,8 @@ esac
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 
-# This fork builds the LKM matrix and ksud for arm64 only (GKI 6.1 and newer),
-# so the bundle carries a single architecture.
+# This fork builds one KMI (android14-6.1) for arm64 only, so the bundle carries a
+# single architecture and a single kernel module.
 mkdir -p "$stage/arm64"
 set -- "$source_dir/aarch64"-android*-lkm/*_kernelsu.ko
 
@@ -38,8 +38,8 @@ else
 fi
 
 kernelsu=$(find "$stage/arm64" -maxdepth 1 -name '*_kernelsu.ko' | wc -l)
-if [ "$kernelsu" -ne 4 ]; then
-    echo "arm64 has $kernelsu kernelsu.ko; expected 4" >&2
+if [ "$kernelsu" -ne 1 ]; then
+    echo "arm64 has $kernelsu kernelsu.ko; expected 1 (android14-6.1)" >&2
     exit 1
 fi
 

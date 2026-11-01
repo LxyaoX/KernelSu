@@ -112,7 +112,7 @@ SUSFS support in the kernel requires `CONFIG_KSU_SUSFS`, which this tree exposes
 
 What is **not** in this repository is the SUSFS kernel implementation itself
 (`fs/susfs.c`, `include/linux/susfs.h`, the per-KMI `fs/*` hooks). Apply it from the
-SUSFS source that matches your kernel version. For `android15-6.6`, the minimal
+SUSFS source that matches your kernel version. For `android14-6.1`, the minimal
 kernel-side patch applies cleanly to a pristine reference tree at upstream commit
 `4a4cb1be85a4694372d3efb9420de69982eac29a`. Do not apply the driver-side patch as a
 whole; this tree already implements many of its hunks and its hook model differs.
@@ -132,11 +132,11 @@ points for the remaining direct calls.
 
 Then build with `CONFIG_KSU_SUSFS=y` and the sub-options you need.
 
-An `android15-6.6` reference image with all SUSFS sub-options enabled has been built
+An `android14-6.1` reference image with all SUSFS sub-options enabled has been built
 successfully for this tree. It has not yet been booted or exercised on a device.
 
 Before moving to a newer SUSFS patch set, run the compatibility check from an
-`android15-6.6` DDK image with a pristine kernel source:
+`android14-6.1` DDK image with a pristine kernel source:
 
 ```sh
 scripts/check-susfs-upstream.sh --upstream /path/to/SUSFS

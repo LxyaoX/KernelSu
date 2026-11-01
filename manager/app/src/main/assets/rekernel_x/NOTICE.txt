@@ -12,11 +12,11 @@ They are copied unmodified from the release archive so the manager can load
 the tombstone driver without the user flashing a separate module. The same
 files are selected and insmod'ed by the upstream module's post-fs-data.sh.
 
-Only the 6.1 and newer builds are shipped (android14-6.1, android15-6.6,
-android16-6.12, android17-6.18); the 5.10 / 5.15 builds were dropped together
-with their kernel targets. Where a KMI had two builds in the release, only the
-newer one is kept - the manager picks the highest-sorting file per KMI, so an
-older build for the same KMI could never be loaded.
+Only the android14-6.1 build is shipped: this tree supports one GKI series, so the
+6.6 / 6.12 / 6.18 builds were removed together with their kernel targets, and the
+5.10 / 5.15 builds never shipped here. Where a KMI had two builds in the release,
+only the newer one is kept - the manager picks the highest-sorting file per KMI,
+so an older build for the same KMI could never be loaded.
 
 FinaSU stages the build matching the running kernel as
 /data/adb/rekernel_x/<file>.ko, records that name in
