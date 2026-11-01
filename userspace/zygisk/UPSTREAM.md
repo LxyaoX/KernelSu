@@ -13,9 +13,18 @@ and the same list of files under `userspace/zygisk`.
 ## Pinned source
 
 - KernelSU: https://github.com/Rouyashiki/YukiSU
-  commit `a90d1fa9ba54f60aea11391a64718869b4846168` (branch `main`).
-  Imported paths: `userspace/zygisk/**`, `kernel/feature/yukizygisk/**`,
-  `uapi/yukizygisk.h`.
+  commit `d09348b63` (branch `main`), which is `a90d1fa9` plus the three
+  zygisk commits below. Imported paths: `userspace/zygisk/**`,
+  `kernel/feature/yukizygisk/**`, `uapi/yukizygisk.h`.
+- YukiPLT: https://github.com/Rouyashiki/YukiPLT
+  commit `bb58c2750af6a126e221b5d1b579b9dc1a216f55`.
+
+  | upstream commit | what it changed |
+  | --- | --- |
+  | `dd32548ba` | replaced the LSPlt PLT hook with YukiPLT and introduced `plt_lifecycle.cpp` / `process_maps.cpp` |
+  | `d09348b63` | cached hook registry per Core, managed fork, and the YukiPLT pin bump to `bb58c275` |
+  | `485e94b90` | ARM32 only: the `musttail` return in `yuki_bootstrap_tango` now carries its `NOLINTNEXTLINE` |
+  | `551083a62` | **not taken**: it fixes `userspace/ksud/src/yzctl.cpp`, which this tree does not have (ksud is Rust and never calls `YZ_RELOAD`) |
 
   | upstream path | vendored path |
   | --- | --- |
@@ -46,10 +55,14 @@ whitespace only.
    updated on its own, where a refusal shows up as injection that silently does
    nothing.
 
-`userspace/zygisk/third_party/lsplt/` is the one path with no upstream file to
+`userspace/zygisk/third_party/yukiplt/` is the one path with no upstream file to
 compare against: upstream carries it as a git submodule
-(`https://github.com/Rouyashiki/LSPlt.git`) and a submodule does not survive a
-tarball sync, so the PLT hooking library is checked in here as plain sources.
+(`https://github.com/Rouyashiki/YukiPLT.git`) and a submodule does not survive a
+tarball sync, so the PLT hooking library is checked in here as plain sources at
+`bb58c275`. It replaced `third_party/lsplt/` wholesale; the vendored copy keeps
+the library's own layout (`CMakeLists.txt`, `cmake/`, `include/`, `src/`,
+`tests/`, `docs/`) because `core/CMakeLists.txt` adds it with
+`add_subdirectory(../third_party/yukiplt ...)`.
 
 ## Re-syncing
 

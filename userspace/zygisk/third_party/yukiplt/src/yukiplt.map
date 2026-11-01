@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rouyashiki <https://rouyashiki.org>
+
+{
+  global:
+    /* Exact optional name. The singleton glob also links non-CFI builds with
+     * --no-undefined-version; it cannot match an extra suffix or prefix. */
+    __cfi_chec[k];
+    yukiplt_c_*;
+    extern "C++" {
+      "yukiplt::load_original(void* const*)";
+      "yukiplt::image_from_soname(char const*)";
+      yukiplt::inspect_imports*;
+      yukiplt::inspect_versioned_imports*;
+      yukiplt::inspect_function_imports*;
+      yukiplt::find_import*;
+      yukiplt::find_function_import*;
+      yukiplt::find_images*;
+      yukiplt::find_image_containing*;
+      yukiplt::MapsCache::*;
+      yukiplt::enable_atfork*;
+      yukiplt::disable_atfork*;
+      yukiplt::fork_status*;
+      yukiplt::prepare_fork*;
+      yukiplt::after_fork*;
+      yukiplt::hook*;
+      yukiplt::unhook*;
+      yukiplt::abandon*;
+      yukiplt::query*;
+      yukiplt::forget_image*;
+      yukiplt::exact_function_selector*;
+      yukiplt::build_hook_plan*;
+      yukiplt::build_function_hook_plan*;
+      yukiplt::prepare_session*;
+      yukiplt::prepare_function_session*;
+      yukiplt::expand_function_candidates*;
+      "yukiplt::HookHandle::~HookHandle()";
+      "yukiplt::HookHandle::operator=(yukiplt::HookHandle&&)";
+      yukiplt::HookSession::install*;
+      yukiplt::HookSession::unhook*;
+      yukiplt::HookSession::abandon*;
+      yukiplt::FunctionHookSession::install*;
+      yukiplt::FunctionHookSession::unhook*;
+      yukiplt::FunctionHookSession::abandon*;
+      yukiplt::RuleSet::?RuleSet*;
+      yukiplt::RuleSet::add_rule*;
+      yukiplt::RuleSet::refresh*;
+      yukiplt::RuleSet::release_image*;
+      yukiplt::RuleSet::notify_loaded*;
+      yukiplt::RuleSet::notify_unloading*;
+      yukiplt::RuleSet::remove_rule*;
+      yukiplt::RuleSet::unhook*;
+      yukiplt::RuleSet::abandon*;
+      yukiplt::RuleSet::statistics*;
+      yukiplt::RuleSet::prune_history*;
+    };
+  local:
+    *;
+};

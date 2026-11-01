@@ -1,0 +1,24 @@
+# Build outputs and local workspaces
+build*/
+out/
+test_dso/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.d
+*.pch
+*.gch
+
+# Local tooling
+AGENTS.md
+CLAUDE.md
+/examples/
+/scripts/
+__pycache__/
+*.py[cod]

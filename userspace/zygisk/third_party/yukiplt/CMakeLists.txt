@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rouyashiki <https://rouyashiki.org>
+
+cmake_minimum_required(VERSION 3.22)
+project(YukiPLT VERSION 0.1.0 LANGUAGES C CXX)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(YUKIPLT_COMPILE_OPTIONS -Wall -Wextra -Wpedantic -Werror)
+
+if(ANDROID)
+    set(_yukiplt_abis arm64-v8a armeabi-v7a x86_64 x86)
+    if(NOT ANDROID_ABI IN_LIST _yukiplt_abis)
+        message(FATAL_ERROR "Unsupported Android ABI: ${ANDROID_ABI}")
+    endif()
+    if(DEFINED ANDROID_PLATFORM_LEVEL)
+        set(_yukiplt_api "${ANDROID_PLATFORM_LEVEL}")
+    elseif(DEFINED CMAKE_ANDROID_API)
+        set(_yukiplt_api "${CMAKE_ANDROID_API}")
+    else()
+        set(_yukiplt_api "${CMAKE_SYSTEM_VERSION}")
+    endif()
+    if(NOT _yukiplt_api MATCHES "^[0-9]+$" OR _yukiplt_api LESS 23)
+        message(FATAL_ERROR "YukiPLT requires Android API 23 or newer")
+    endif()
+    if("hwaddress" IN_LIST ANDROID_SANITIZE AND
+       (NOT ANDROID_ABI STREQUAL "arm64-v8a" OR _yukiplt_api LESS 34))
+        message(FATAL_ERROR "HWASan requires arm64-v8a and Android API 34 or newer")
+    endif()
+endif()
+
+set(YUKIPLT_LIBRARY_TYPE SHARED CACHE STRING "YukiPLT library type: STATIC or SHARED")
+set_property(CACHE YUKIPLT_LIBRARY_TYPE PROPERTY STRINGS STATIC SHARED)
+if(NOT YUKIPLT_LIBRARY_TYPE MATCHES "^(STATIC|SHARED)$")
+    message(FATAL_ERROR "YUKIPLT_LIBRARY_TYPE must be STATIC or SHARED")
+endif()
+if(WIN32 AND YUKIPLT_LIBRARY_TYPE STREQUAL "SHARED")
+    message(FATAL_ERROR "Windows requires YUKIPLT_LIBRARY_TYPE=STATIC")
+endif()
+include(cmake/YukiPLTSources.cmake)
+add_subdirectory(src)
