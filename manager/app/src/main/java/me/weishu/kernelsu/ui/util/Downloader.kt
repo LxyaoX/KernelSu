@@ -1,6 +1,7 @@
 package me.weishu.kernelsu.ui.util
 
 import android.net.Uri
+import android.os.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
@@ -77,7 +78,39 @@ internal fun parseReleaseAssetName(name: String): Pair<String, Int>? {
     return match.groupValues[1] to versionCode
 }
 
+/**
+ * How long an answer from the release feed is reused.
+ *
+ * The home page re-runs this on every resume and every capability refresh, and the feed only moves
+ * when a build is published, so without a cache a single visit cost one HTTPS round trip per return
+ * to the page. A build that reports itself as already current is reused for the full window; a
+ * failed or offline check is retried sooner so a flaky link does not hide an update for half an hour.
+ */
+private const val UPDATE_CHECK_TTL_MS = 30 * 60_000L
+private const val UPDATE_CHECK_RETRY_MS = 5 * 60_000L
+
+private val updateCheckLock = Any()
+private var updateCheckAt = 0L
+private var updateCheckResult: LatestVersionInfo? = null
+
 fun checkNewVersion(): LatestVersionInfo {
+    synchronized(updateCheckLock) {
+        val cached = updateCheckResult
+        if (cached != null) {
+            val age = SystemClock.elapsedRealtime() - updateCheckAt
+            val ttl = if (cached.versionCode > 0) UPDATE_CHECK_TTL_MS else UPDATE_CHECK_RETRY_MS
+            if (age < ttl) return cached
+        }
+    }
+    val fresh = fetchNewVersion()
+    synchronized(updateCheckLock) {
+        updateCheckAt = SystemClock.elapsedRealtime()
+        updateCheckResult = fresh
+    }
+    return fresh
+}
+
+private fun fetchNewVersion(): LatestVersionInfo {
     if (!isNetworkAvailable(ksuApp)) return LatestVersionInfo()
     // default null value if failed
     val defaultValue = LatestVersionInfo()

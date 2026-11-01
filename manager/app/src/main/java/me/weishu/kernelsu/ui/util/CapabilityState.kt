@@ -87,12 +87,16 @@ object CapabilityRepository {
 
     fun current(): CapabilityState = state.value
 
-    /** Re-read identity and probe both shells. Safe to call from the main thread. */
+    /**
+     * Re-read identity and probe the default shell. Safe to call from the main thread.
+     *
+     * The global-mount shell is deliberately not probed here: it is built on demand, and this
+     * method runs on every resume and every home retry.
+     */
     fun refresh() {
         scope.launch {
             identity.value = readIdentity()
             RootShell.awaitReady(false)
-            RootShell.awaitReady(true)
         }
     }
 

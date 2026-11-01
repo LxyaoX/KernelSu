@@ -137,9 +137,16 @@ object RootShell {
         scope.launch { ensure(globalMnt) }
     }
 
+    /**
+     * Starts the default shell only.
+     *
+     * The global-mount slot is built on demand: nothing in this tree asks for it (`getRootShell`
+     * and its friends always take the default), so probing it at launch spent a second `su` process
+     * plus its retry loop on every cold start and again on every capability refresh. [ensure] still
+     * builds it the first time someone passes `globalMnt = true`.
+     */
     fun initialize() {
         probe(false)
-        probe(true)
     }
 
     private fun cooldownFor(s: Slot): Long =
