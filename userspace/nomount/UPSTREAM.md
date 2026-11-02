@@ -12,18 +12,19 @@ Rust, so no upstream shell scripts or WebUI are imported.
 ## Pinned sources
 
 - NoMount: https://github.com/maxsteeel/nomount
-  commit `71883de7ab2e2468bbbaf78ef64ac44a33069531` (branch `dev`, ten commits
-  past tag `v2.2.0`). The driver is taken from `dev` because every change since
-  the tag is a kernel-side fix - a readdir reference count that moved the wrong way,
-  a denied UID range that an exact `target_uid` match bypassed, a dentry
-  revalidate that recognised too few of our `d_op` variants, and a duplicated
-  materialisation - while the wire protocol did not move (`22`).
+  commit `04af0552bb29c7cee1b78c3eea69d7ed98b80bf2` (branch `dev`, sixteen
+  commits past tag `v2.2.0`). The driver is taken from `dev` because every change
+  since the tag is a kernel-side fix: the readdir reference count and the denied
+  UID range above, then superblock pinning while an `nm_sop` is live, mainline
+  6.16 VFS renames, an `sb_rdonly()` fallback, immutable inode bindings, trimmed
+  rule initialisation and hook rollback, and draining reclaim work on shutdown.
+  The wire protocol still has not moved (`22`).
   Imported from `kernel/src/` only:
 
   | upstream path | vendored path | sha256 |
   | --- | --- | --- |
-  | `kernel/src/nomount.c` | `kernel/src/nomount.c` | `b8db2cdffb06526c31817f93695dd62c8b3416c92cbe7a1768267f8501603669` |
-  | `kernel/src/nomount.h` | `kernel/src/nomount.h` | `8f15ffcb4b998d8a05219b793cf22c0e25a383296376fc49a331e07bc7c93766` |
+  | `kernel/src/nomount.c` | `kernel/src/nomount.c` | `b73f86def96e9aebecd04961cf8209fd8a5e1535a9cd3b6468f5ef64692c84a2` |
+  | `kernel/src/nomount.h` | `kernel/src/nomount.h` | `cf469d4d3bbf96203f091dc004632be354c0ec06171ef7081c4717afaabe8442` |
   | `kernel/src/Kconfig` | `kernel/src/Kconfig` | `1df7ad3589a282128f797f7a46b28aee315d080550aae26b681a898f11c7abc7` |
   | `kernel/src/Makefile` | `kernel/src/Makefile` | `1191fe9ef8e2f3549419fd90a118fbe3d11fc02a04b6353bae0e81be27e03e62` |
   | `kernel/LICENSE` | `kernel/LICENSE` | `8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643` |
