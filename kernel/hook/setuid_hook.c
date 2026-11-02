@@ -58,7 +58,6 @@ static void ksu_handle_susfs_setresuid(uid_t old_uid, uid_t new_uid, bool zygote
         ksu_set_task_tracepoint_flag(current);
         spin_unlock_irq(&current->sighand->siglock);
 
-        pr_info("install fd for manager: %d\n", new_uid);
         ksu_install_fd();
         return;
     }
