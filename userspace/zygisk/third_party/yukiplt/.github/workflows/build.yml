@@ -1,0 +1,127 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rouyashiki <https://rouyashiki.org>
+
+name: Build and check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: '30.0.16248370'
+  CMAKE_VERSION: '4.1.2'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  format:
+    name: clang-format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install NDK tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION"
+          echo "$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Check formatting
+        run: |
+          clang-format --version
+          git ls-files -z -- '*.c' '*.cpp' '*.h' '*.hpp' |
+            xargs -0 -r clang-format --dry-run --Werror
+
+  android:
+    name: Android / ${{ matrix.abi }} / ${{ matrix.variant.name }}
+    needs: format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64, x86]
+        variant:
+          - {name: shared-libcxx-static, type: SHARED, stl: c++_static}
+          - {name: shared-libcxx-shared, type: SHARED, stl: c++_shared}
+          - {name: static, type: STATIC, stl: c++_static}
+    env:
+      ABI: ${{ matrix.abi }}
+      STL: ${{ matrix.variant.stl }}
+      LIBRARY_TYPE: ${{ matrix.variant.type }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install build tools
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "ndk;$NDK_VERSION" "cmake;$CMAKE_VERSION"
+          echo "NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/cmake/$CMAKE_VERSION/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Build selected library
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK_ROOT/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI="$ABI" \
+            -DANDROID_PLATFORM=android-23 \
+            -DANDROID_STL="$STL" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS_RELEASE="-Oz -DNDEBUG -g0" \
+            -DYUKIPLT_LIBRARY_TYPE="$LIBRARY_TYPE" \
+            -DYUKIPLT_LTO=ON \
+            -DYUKIPLT_RELEASE_OPTIMIZATION=Oz
+          cmake --build build --parallel 2
+
+      - name: Run clang-tidy
+        if: matrix.variant.type == 'SHARED'
+        run: |
+          clang-tidy --version
+          git ls-files -z -- 'src/*.cpp' |
+            xargs -0 -r -n 1 -P 2 clang-tidy -p build
+
+      - name: Package selected library
+        id: artifact
+        run: |
+          mkdir -p package
+          if [ "$LIBRARY_TYPE" = SHARED ]; then
+            library=libyukiplt.so
+            cp "build/src/$library" "package/$library"
+            llvm-nm --dynamic --defined-only "package/$library" > "$RUNNER_TEMP/exports-before.txt"
+            llvm-strip --strip-unneeded "package/$library"
+            llvm-nm --dynamic --defined-only "package/$library" > "$RUNNER_TEMP/exports-after.txt"
+            cmp "$RUNNER_TEMP/exports-before.txt" "$RUNNER_TEMP/exports-after.txt"
+            llvm-readelf --sections "package/$library" > "$RUNNER_TEMP/sections.txt"
+            if grep -Eq '\.(debug_|zdebug_|symtab[[:space:]])' "$RUNNER_TEMP/sections.txt"; then
+              echo 'Packaged shared library still contains debug information or a static symbol table' >&2
+              exit 1
+            fi
+          else
+            library=libyukiplt.a
+            cp "build/src/$library" "package/$library"
+          fi
+          test -s "package/$library"
+          echo "path=package/$library" >> "$GITHUB_OUTPUT"
+
+      - name: Upload library package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: yukiplt-${{ matrix.abi }}-${{ matrix.variant.name }}
+          path: ${{ steps.artifact.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14

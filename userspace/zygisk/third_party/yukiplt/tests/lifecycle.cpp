@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+#include "maps_cache.hpp"
+
 static long dispatcher_test_syscall(long number, unsigned* address, int operation, int value,
                                     void* timeout, void* second, int third);
 #define syscall dispatcher_test_syscall
@@ -284,6 +286,38 @@ TEST_F(ContractFixture, OldForgottenHandleCannotInvalidateNewCacheBinding) {
   EXPECT_EQ(maps_calls, 0u);
 }
 
+TEST_F(ContractFixture, CachedRestoreDoesNotRebindAfterConcurrentForget) {
+  char text[160];
+  std::snprintf(text, sizeof(text), "%zx-%zx r--p 00000000 00:00 0\n", first_page, end_page);
+  MapsCache cache;
+  ASSERT_TRUE(cache.import_text(text, std::strlen(text)).ok());
+  auto installed = hook(view(101), "alpha", kReplA, nullptr);
+  ASSERT_TRUE(installed.ok());
+  static ImageView forgotten;
+  forgotten = view(101);
+  auto* mutex = detail::op_mutex().native_handle();
+  detail::set_mutex_unlock_callback(mutex, true, [] {
+    detail::set_mutex_unlock_callback(nullptr, true, nullptr);
+    EXPECT_TRUE(forget_image(forgotten).ok());
+  });
+  reset_counts();
+  auto result = unhook_cached(cache, installed.handle);
+  detail::set_mutex_unlock_callback(nullptr, true, nullptr);
+  EXPECT_EQ(result.code, ErrorCode::kImageInvalidated);
+  EXPECT_FALSE(installed.handle.valid());
+  EXPECT_FALSE(cache.has_bindings());
+  EXPECT_EQ(protect_calls, 0u);
+  EXPECT_EQ(cas_calls, 0u);
+  set_slot(0, 0x1000);
+  HookRequest request{"alpha", kReplB, nullptr};
+  auto next = hook_batch_cached(cache, view(102), &request, 1);
+  EXPECT_EQ(next.error.code, ErrorCode::kInvalidArgument);
+  ASSERT_TRUE(cache.import_text(text, std::strlen(text)).ok());
+  auto refreshed = hook_batch_cached(cache, view(102), &request, 1);
+  ASSERT_TRUE(refreshed.ok());
+  EXPECT_TRUE(unhook_cached(cache, refreshed.handle).ok());
+}
+
 TEST_F(ContractFixture, SuccessPublishesBeforeTheReplacementIsReachable) {
   output_at_first_cas = reinterpret_cast<void*>(uintptr_t{1});
   auto result = hook_import(view(), {"alpha"}, kReplA, &outputs[0]);
@@ -488,6 +522,57 @@ TEST(Registry, GenerationRejectsStaleHandle) {
   reg.drop(b);
 }
 
+TEST(Registry, SharedPageIndexSurvivesGrowthDeletionAndRecovery) {
+  MapsCache cache;
+  const char* text = test::synthetic_maps_line(false);
+  ASSERT_TRUE(cache.import_text(text, std::strlen(text)).ok());
+  auto state = MapsCacheAccess::get(cache);
+  std::lock_guard<std::mutex> lock(op_mutex());
+  auto& reg = Registry::instance();
+  ASSERT_TRUE(reg.trim_idle_storage().ok());
+  const size_t ps = page_size();
+  std::vector<uint64_t> ids;
+  std::vector<uintptr_t> pages;
+  for (size_t i = 0; i < 100; ++i) {
+    pages.push_back((i + 16) * (i + 16) * ps);
+    SlotRecord s = slot(pages.back() + 8);
+    auto id = reg.claim(sys_image(), &s, 1);
+    ASSERT_NE(id, Registry::kInvalidId);
+    ASSERT_TRUE(reg.bind_cache(id, state).ok());
+    reg.mark_installed(id);
+    ids.push_back(id);
+  }
+  const uintptr_t page = pages[50];
+  SlotRecord second = slot(page + 16);
+  auto shared = reg.claim(sys_image(), &second, 1);
+  ASSERT_NE(shared, Registry::kInvalidId);
+  ASSERT_TRUE(reg.bind_cache(shared, state).ok());
+  reg.mark_installed(shared);
+  PageResidueRecord residue{page, kProtRead, EPERM};
+  SlotRecord first = slot(page + 8);
+  reg.mark_indeterminate(ids[50], &first, 1, &residue, 1);
+  reg.mark_indeterminate(shared, &second, 1, &residue, 1);
+  ASSERT_TRUE(reg.page_pending(page));
+  for (size_t i = 0; i < ids.size(); i += 2)
+    if (i != 50) reg.drop(ids[i]);
+  ASSERT_NE(reg.cached_page(page), nullptr);
+  EXPECT_TRUE(reg.page_pending(page));
+  reg.finish_restore(ids[50], false, GroupState::kInstalled, &first, 1, &residue, 0);
+  EXPECT_TRUE(reg.page_pending(page));
+  reg.drop(ids[50]);
+  reg.finish_restore(shared, false, GroupState::kInstalled, &second, 1, &residue, 0);
+  EXPECT_FALSE(reg.page_pending(page));
+  reg.drop(shared);
+  EXPECT_EQ(reg.cached_page(page), nullptr);
+  for (size_t i = 1; i < ids.size(); i += 2) {
+    EXPECT_NE(reg.cached_page(pages[i]), nullptr);
+    reg.drop(ids[i]);
+  }
+  EXPECT_FALSE(reg.cache_bound(state.get()));
+  EXPECT_EQ(reg.live_count(), 0u);
+  EXPECT_TRUE(reg.trim_idle_storage().ok());
+}
+
 }  // namespace registry_checks
 
 namespace rules_checks {
@@ -582,7 +667,7 @@ struct RulesFixture : testing::Test {
 
   FakeImage& add_image(const char* path, uintptr_t slot_value) {
     ElfBuilder b;
-    b.add_symbol("target", 1).add_jump_slot(1);
+    b.add_symbol("target", 1).set_symbol_undefined(1).add_jump_slot(1);
     FakeImage image;
     image.built = b.build();
     image.path = path;
@@ -1044,6 +1129,36 @@ TEST(MultithreadFork, DrainsCStoreBeforePublishingObjectToken) {
 }  // namespace
 
 namespace contracts_checks {
+TEST_F(ContractFixture, ForkDrainsCRecoveryDiagnosticWriteback) {
+  ASSERT_TRUE(enable_atfork(native_config()).ok());
+  auto image_view = view();
+  yukiplt_c_image image{image_view.load_bias, image_view.phdr_table, image_view.phdr_count,
+                        image_view.instance_token};
+  yukiplt_c_request request{YUKIPLT_C_SELECTOR("alpha"), kReplA, nullptr};
+  yukiplt_c_handle handle{};
+  ASSERT_EQ(yukiplt_c_hook_batch(&image, &request, 1, &handle, nullptr).code, 0u);
+  yukiplt_c_recovery_diagnostic diagnostic{};
+  diagnostic.stage = UINT32_MAX;
+  yukiplt_c_error result{};
+  checkpoint_entered.store(false);
+  std::thread worker([&] {
+    detail::set_mutex_unlock_callback(detail::op_mutex().native_handle(), true, await_fork_drain);
+    result = yukiplt_c_query_recovery(&handle, &diagnostic, nullptr, 0);
+  });
+  while (!checkpoint_entered.load()) std::this_thread::yield();
+  pid_t child = fork();
+  if (!child) {
+    if (diagnostic.stage == UINT32_MAX || diagnostic.error.code) _exit(1);
+    _exit(yukiplt_c_unhook(&handle, nullptr, 0).code);
+  }
+  worker.join();
+  wait_child(child);
+  EXPECT_EQ(result.code, 0u);
+  EXPECT_NE(diagnostic.stage, UINT32_MAX);
+  EXPECT_EQ(yukiplt_c_unhook(&handle, nullptr, 0).code, 0u);
+  EXPECT_TRUE(disable_atfork().ok());
+}
+
 TEST_F(ContractFixture, ForkDrainsHandleDiagnostics) {
   static std::atomic<bool> release{false};
   for (bool timeout : {true, false}) {

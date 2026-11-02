@@ -1,6 +1,6 @@
 # Build and package
 
-Use Clang, CMake 3.22 or newer, Ninja and the Android NDK. Select the native ABI
+Use Clang, CMake 3.24 or newer, Ninja and the Android NDK. Select the native ABI
 of the process that will load the library. The minimum Android API is 23.
 
 ```sh
@@ -13,7 +13,7 @@ cmake --build build-android
 cmake --install build-android --prefix package --component production
 ```
 
-The package contains `lib/libyukiplt.so`, `include/yukiplt.h` (C) and
+This local CMake install contains `lib/libyukiplt.so`, `include/yukiplt.h` (C) and
 `include/yukiplt.hpp` (C++), the license and these
 integration guides. For the `c++_shared` configuration, deploy the matching NDK's
 `libc++_shared.so` too, including for C callers. Android does not supply that
@@ -22,6 +22,42 @@ runtime. The `c++_static` shared configuration has no such dependency.
 For an existing CMake project, use `add_subdirectory(path/to/YukiPLT)` and link
 your target with `yukiplt`. Configure the parent project with the same NDK,
 ABI, API and STL settings. Project warnings apply only to YukiPLT's targets.
+
+Release builds use `YUKIPLT_RELEASE_OPTIMIZATION=Oz` and
+`YUKIPLT_LTO=ON` by default. Select `Oz`, `O2` or `O3` explicitly to
+compare optimization settings for your workload. `YUKIPLT_LTO=ON` requires
+Clang and CMake 3.24 or newer; configuration checks an archive-to-host Full LTO
+link and fails if the selected toolchain cannot complete it. These options
+affect YukiPLT's Release target, leaving other targets and build types unchanged.
+CMake-installed static Full LTO packages propagate the required final-link option
+through their exported CMake target. Use the matching Clang/LLVM toolchain when consuming a
+bitcode archive. Set `YUKIPLT_LTO=OFF` to disable LTO; this also permits
+CMake 3.22 or newer. Existing build directories retain their cached setting;
+pass `-DYUKIPLT_LTO=ON` to enable it there. Measure sanitizer builds separately
+from production builds.
+
+The `Build and check` GitHub Actions workflow runs on pushes, pull requests and
+manual dispatch. It uses NDK r30 (`30.0.16248370`) and CMake 4.1.2 to build API 23
+Release packages for all four supported ABIs, with Full LTO enabled. Each job
+builds one library type, and each artifact contains only that binary at its root:
+
+- `yukiplt-<abi>-shared-libcxx-static`: `libyukiplt.so` with static libc++.
+- `yukiplt-<abi>-shared-libcxx-shared`: `libyukiplt.so` with shared libc++.
+- `yukiplt-<abi>-static`: `libyukiplt.a`; the final host link selects libc++.
+
+CI disables debug information for all three variants and strips shared
+libraries before packaging, checking that their dynamic exports are preserved.
+The static archive contains LLVM bitcode and retains the symbols required for
+linking; consume it with the matching NDK toolchain and `-flto=full` at final link.
+Use headers from the same source revision. For the shared-libcxx-shared variant,
+supply that NDK's matching `libc++_shared.so` as described above.
+
+CI checks all tracked C/C++ sources and headers with the NDK's clang-format.
+It also runs the NDK's clang-tidy on `src/` using each ABI/STL shared build's
+compilation database and the repository's `.clang-tidy` policy. Formatting
+violations and clang-tidy errors fail the workflow; tidy warnings remain
+warnings. These jobs build and analyze Android code; they do not run it on an
+Android device.
 
 Shared artifacts use hidden visibility, an explicit export map, 16K LOAD
 alignment and NODELETE. Internal calls bind to the same copy of the library.

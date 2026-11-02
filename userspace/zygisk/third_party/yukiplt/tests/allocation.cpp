@@ -175,7 +175,7 @@ struct RuleOomFixture {
 
   RuleOomFixture() {
     test::ElfBuilder b;
-    b.add_symbol("target", 1).add_jump_slot(1);
+    b.add_symbol("target", 1).set_symbol_undefined(1).add_jump_slot(1);
     image = b.build();
     __atomic_store_n(reinterpret_cast<uintptr_t*>(image.got_slot_addr(0)), uintptr_t{0x1000},
                      __ATOMIC_RELEASE);
@@ -295,4 +295,44 @@ TEST(ImportAllocation, CachedInstallAndSnapshotReplacementAreFailureAtomic) {
   fail_after = -1;
   EXPECT_EQ(error.code, ErrorCode::kOutOfMemory);
   EXPECT_EQ(live_groups(), baseline);
+}
+
+TEST(ImportAllocation, PageIndexGrowthFailureDoesNotPublishClaim) {
+  using namespace yukiplt::detail;
+  auto& reg = Registry::instance();
+  const auto ps = page_size();
+  std::lock_guard<std::mutex> lock(op_mutex());
+  size_t failures = 0;
+  bool success = false;
+  for (int allocation = 0; allocation < 32; ++allocation) {
+    ASSERT_TRUE(reg.trim_idle_storage().ok());
+    uint64_t existing[8];
+    for (size_t i = 0; i < 8; ++i) {
+      SlotRecord slot{(i + 16) * ps + 8};
+      existing[i] = reg.claim({}, &slot, 1);
+      ASSERT_NE(existing[i], Registry::kInvalidId);
+    }
+    SlotRecord next{32 * ps + 8};
+    uint64_t id = Registry::kInvalidId;
+    fail_after = allocation;
+    try {
+      id = reg.claim({}, &next, 1);
+    } catch (const std::bad_alloc&) {
+      ++failures;
+    }
+    fail_after = -1;
+    if (id == Registry::kInvalidId) {
+      EXPECT_EQ(reg.live_count(), 8u);
+      EXPECT_FALSE(reg.owns_slot(next.address));
+      EXPECT_FALSE(reg.page_pending(next.address & ~(ps - 1)));
+    } else {
+      reg.drop(id);
+      success = true;
+    }
+    for (auto previous : existing) reg.drop(previous);
+    if (success) break;
+  }
+  EXPECT_TRUE(success);
+  EXPECT_GE(failures, 2u);
+  EXPECT_TRUE(reg.trim_idle_storage().ok());
 }

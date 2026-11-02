@@ -18,6 +18,7 @@
 namespace yukiplt::detail {
 Error process_entry() noexcept;
 // Stack-owned admission. A nested operation borrows the active thread's lease.
+class AdmittedOperation;
 class OperationGuard {
  public:
   OperationGuard() noexcept;
@@ -25,6 +26,7 @@ class OperationGuard {
   OperationGuard(const OperationGuard&) = delete;
   OperationGuard& operator=(const OperationGuard&) = delete;
   Error error() const noexcept { return error_; }
+  AdmittedOperation context() const noexcept;
   OperationGuard* next = nullptr;
   unsigned thread = 0;
 
@@ -32,6 +34,23 @@ class OperationGuard {
   Error error_;
   bool owns_ = false;
 };
+
+// A borrowed lexical proof for direct internal calls; never retain it or pass
+// it across a host callback or process transition.
+class AdmittedOperation {
+ public:
+  Error error() const noexcept { return guard_.error(); }
+
+ private:
+  friend class OperationGuard;
+  explicit AdmittedOperation(const OperationGuard& guard) noexcept : guard_(guard) {}
+  const OperationGuard& guard_;
+};
+inline AdmittedOperation OperationGuard::context() const noexcept {
+  return AdmittedOperation(*this);
+}
+Error query_recovery_admitted(const AdmittedOperation&, const HookHandle&, RecoveryDiagnostic*,
+                              ResidualPage*, size_t);
 
 // Admission failure diagnostics use only caller-owned scalar storage.
 inline void admission_diagnostic(OperationDiagnostic* out, Error error) noexcept {

@@ -3,6 +3,7 @@
 
 #include "registry.hpp"
 
+#include <algorithm>
 #include <cerrno>
 #include <stdexcept>
 
@@ -208,6 +209,84 @@ void Registry::index_reserve(size_t extra) {
   index_ = std::move(table);
 }
 
+namespace {
+size_t page_hash(uintptr_t address, size_t mask) noexcept {
+  return static_cast<size_t>((static_cast<uint64_t>(address) * 0x9E3779B97F4A7C15ull) >> 32) & mask;
+}
+}  // namespace
+size_t Registry::page_find(uintptr_t page) const noexcept {
+  if (pages_.empty()) return 0;
+  size_t mask = pages_.size() - 1;
+  size_t i = page_hash(page, mask);
+  while (pages_[i].owners && pages_[i].address != page) i = (i + 1) & mask;
+  return pages_[i].owners ? i : pages_.size();
+}
+void Registry::page_reserve(size_t extra) {
+  if (extra > (std::numeric_limits<size_t>::max() / 2) - pages_used_)
+    throw std::length_error("Registry page capacity");
+  size_t needed = (pages_used_ + extra) * 2;
+  if (needed <= pages_.size()) return;
+  size_t cap = pages_.empty() ? 16 : pages_.size();
+  while (cap < needed) {
+    if (cap > std::numeric_limits<size_t>::max() / 2)
+      throw std::length_error("Registry page capacity");
+    cap *= 2;
+  }
+  SmallVec<PageEntry, 16> next;
+  next.reserve(cap);
+  for (size_t i = 0; i < cap; ++i) next.push_back({});
+  for (const auto& entry : pages_) {
+    if (!entry.owners) continue;
+    size_t i = page_hash(entry.address, cap - 1);
+    while (next[i].owners) i = (i + 1) & (cap - 1);
+    next[i] = entry;
+  }
+  pages_ = std::move(next);
+}
+void Registry::page_insert(uintptr_t page) noexcept {
+  size_t i = page_hash(page, pages_.size() - 1);
+  while (pages_[i].owners && pages_[i].address != page) i = (i + 1) & (pages_.size() - 1);
+  if (!pages_[i].owners) {
+    pages_[i].address = page;
+    ++pages_used_;
+  }
+  ++pages_[i].owners;
+}
+void Registry::page_erase(uintptr_t page) noexcept {
+  size_t hole = page_find(page);
+  if (hole == pages_.size() || --pages_[hole].owners) return;
+  const size_t mask = pages_.size() - 1;
+  for (size_t j = (hole + 1) & mask; pages_[j].owners; j = (j + 1) & mask) {
+    size_t home = page_hash(pages_[j].address, mask);
+    bool in_range = hole <= j ? (home > hole && home <= j) : (home > hole || home <= j);
+    if (!in_range) {
+      pages_[hole] = pages_[j];
+      hole = j;
+    }
+  }
+  pages_[hole] = {};
+  --pages_used_;
+}
+void Registry::update_pending(const Record& record, bool add) noexcept {
+  if (record.image.invalidated) return;
+  for (const auto& residue : record.residue) {
+    auto& page = pages_[page_find(residue.page)];
+    if (add)
+      ++page.pending;
+    else
+      --page.pending;
+  }
+}
+void Registry::unindex_pages(Record& record) noexcept {
+  if (record.image.invalidated) return;
+  update_pending(record, false);
+  for (uintptr_t address : record.pages) {
+    auto& page = pages_[page_find(address)];
+    if (record.cache && --page.bindings == 0) page.cache = nullptr;
+    page_erase(address);
+  }
+}
+
 uint64_t Registry::claim(const ImageIdentity& image, const SlotRecord* slots, size_t count,
                          const char* system_path) {
   if (slots == nullptr || count == 0 || !salt_ready_ || ids_exhausted_) return kInvalidId;
@@ -221,6 +300,16 @@ uint64_t Registry::claim(const ImageIdentity& image, const SlotRecord* slots, si
 
   // Grow the index before anything else, so inserting below cannot fail.
   index_reserve(count);
+  SmallVec<uintptr_t, 2> group_pages;
+  const size_t ps = page_size();
+  if (!ps) return kInvalidId;
+  for (size_t i = 0; i < count; ++i) group_pages.push_back(slots[i].address & ~(uintptr_t(ps) - 1));
+  std::sort(group_pages.begin(), group_pages.end());
+  SmallVec<uintptr_t, 2> unique_pages;
+  for (uintptr_t page : group_pages)
+    if (unique_pages.empty() || unique_pages[unique_pages.size() - 1] != page)
+      unique_pages.push_back(page);
+  page_reserve(unique_pages.size());
 
   if (free_list_.empty()) {
     // Indices stay below 2^31 so a salted id can never equal kInvalidId.
@@ -252,6 +341,7 @@ uint64_t Registry::claim(const ImageIdentity& image, const SlotRecord* slots, si
   r.slots.clear();
   r.residue.clear();
   for (size_t i = 0; i < count; ++i) r.slots.push_back(slots[i]);
+  r.pages = std::move(unique_pages);
   r.image = image;
   r.system_path.swap(path);
   r.diagnostic = {};
@@ -259,6 +349,7 @@ uint64_t Registry::claim(const ImageIdentity& image, const SlotRecord* slots, si
   r.in_use = true;
   free_list_.pop_back();
   for (size_t i = 0; i < count; ++i) index_insert(slots[i].address, index);
+  for (uintptr_t page : r.pages) page_insert(page);
   return make_id(r.generation, index);
 }
 
@@ -279,6 +370,8 @@ Error Registry::trim_idle_storage() noexcept {
   free_list_ = {};
   index_ = {};
   index_used_ = 0;
+  pages_ = {};
+  pages_used_ = 0;
   return Error::Ok();
 }
 
@@ -292,6 +385,7 @@ void Registry::mark_indeterminate(uint64_t id, const SlotRecord* slots, size_t c
                                   const PageResidueRecord* pages, size_t page_count) {
   Record* r = resolve(id);
   if (r == nullptr) return;
+  update_pending(*r, false);
   r->state = GroupState::kIndeterminate;
   if (slots != nullptr) {
     // The written-back slots are the group's own slots with updated values; the
@@ -302,6 +396,7 @@ void Registry::mark_indeterminate(uint64_t id, const SlotRecord* slots, size_t c
   }
   r->residue.clear();
   for (size_t i = 0; i < page_count; ++i) r->residue.push_back(pages[i]);
+  update_pending(*r, true);
 }
 
 void Registry::drop(uint64_t id) { (void)release(id); }
@@ -335,6 +430,7 @@ void Registry::finish_restore(uint64_t id, bool released, GroupState not_release
     const auto index = index_of(id);
     if (!r->image.invalidated) index_erase_record(*r, index);
     if (r->image.invalidated) invalidate_cache(id);
+    unindex_pages(*r);
     r->cache.reset();
     r->in_use = false;
     advance_generation(*r);
@@ -350,8 +446,10 @@ void Registry::finish_restore(uint64_t id, bool released, GroupState not_release
     for (size_t i = 0; i < slot_count; ++i) r->slots.push_back(slots[i]);
   }
   if (pages != nullptr) {
+    update_pending(*r, false);
     r->residue.clear();
     for (size_t i = 0; i < page_count; ++i) r->residue.push_back(pages[i]);
+    update_pending(*r, true);
   }
 }
 
@@ -361,6 +459,7 @@ Error Registry::release(uint64_t id) {
   const auto index = index_of(id);
   if (!r->image.invalidated) index_erase_record(*r, index);
   if (!r->residue.empty() || r->image.invalidated) invalidate_cache(id);
+  unindex_pages(*r);
   r->cache.reset();
   r->in_use = false;
   advance_generation(*r);
@@ -420,6 +519,7 @@ size_t Registry::forget_custom_image(const ImageIdentity& image) {
       // so a new instance at the same address can be claimed.
       index_erase_record(r, static_cast<uint32_t>(index));
       invalidate_cache(make_id(r.generation, static_cast<uint32_t>(index)));
+      unindex_pages(r);
       r.cache.reset();
       r.image.invalidated = true;
       ++n;
@@ -468,15 +568,10 @@ Error Registry::check_cache(uint64_t id, const MapsCacheState* cache) const noex
     return Error::Make(ErrorCode::kInvalidArgument);
   if (record->cache.get() == cache) return Error::Ok();
   if (!record->cache && !record->residue.empty()) return Error::Make(ErrorCode::kInvalidArgument);
-  for (const auto& slot : record->slots) {
-    uintptr_t page = slot.address & ~(uintptr_t(cache->page_size) - 1);
-    for (const auto& other : records_) {
-      if (!other.in_use || other.image.invalidated || !other.cache || other.cache.get() == cache)
-        continue;
-      for (const auto& target : other.slots)
-        if ((target.address & ~(uintptr_t(cache->page_size) - 1)) == page)
-          return Error::Make(ErrorCode::kInvalidArgument);
-    }
+  for (uintptr_t page : record->pages) {
+    size_t i = page_find(page);
+    if (i != pages_.size() && pages_[i].cache && pages_[i].cache != cache)
+      return Error::Make(ErrorCode::kInvalidArgument);
   }
   return Error::Ok();
 }
@@ -491,31 +586,30 @@ Error Registry::bind_cache(uint64_t id, const std::shared_ptr<MapsCacheState>& c
   const size_t ps = cache->page_size;
   for (const auto& slot : record->slots) {
     const uintptr_t page = slot.address & ~(static_cast<uintptr_t>(ps) - 1);
-    for (const auto& other : records_) {
-      if (!other.in_use || other.image.invalidated || !other.cache || other.cache == cache)
-        continue;
-      for (const auto& target : other.slots)
-        if ((target.address & ~(static_cast<uintptr_t>(ps) - 1)) == page)
-          return Error::Make(ErrorCode::kInvalidArgument);
-    }
+    size_t i = page_find(page);
+    if (i != pages_.size() && pages_[i].cache && pages_[i].cache != cache.get())
+      return Error::Make(ErrorCode::kInvalidArgument);
     VmaInfo vma;
     if (Error e = cache->lookup(page, vma)) return e;
     if (Error e = cache->remember_page(page, vma)) return e;
   }
   record->cache = cache;
+  // Preserve cache validation/invalidation across the restore lock handoff.
+  // The forgotten image has already relinquished its page index entries.
+  if (record->image.invalidated) return Error::Ok();
+  for (uintptr_t page : record->pages) {
+    auto& entry = pages_[page_find(page)];
+    entry.cache = cache.get();
+    ++entry.bindings;
+  }
   return Error::Ok();
 }
 CachedPage* Registry::cached_page(uintptr_t page) noexcept {
-  for (auto& record : records_) {
-    if (!record.in_use || record.image.invalidated || !record.cache) continue;
-    const size_t ps = record.cache->page_size;
-    for (const auto& slot : record.slots) {
-      if ((slot.address & ~(static_cast<uintptr_t>(ps) - 1)) != page) continue;
-      auto it = record.cache->pages.find(page);
-      if (it != record.cache->pages.end()) return &it->second;
-    }
-  }
-  return nullptr;
+  size_t i = page_find(page);
+  if (i == pages_.size() || !pages_[i].cache) return nullptr;
+  auto& tracked = pages_[i].cache->pages;
+  auto found = tracked.find(page);
+  return found == tracked.end() ? nullptr : &found->second;
 }
 bool Registry::cache_bound(const MapsCacheState* cache) const noexcept {
   for (const auto& record : records_)
@@ -555,12 +649,8 @@ Error Registry::prepare_cache_update(const MapsCacheState* cache, MapsCacheState
   return Error::Ok();
 }
 bool Registry::page_pending(uintptr_t page) const noexcept {
-  for (const auto& record : records_) {
-    if (!record.in_use || record.image.invalidated) continue;
-    for (const auto& residue : record.residue)
-      if (residue.page == page) return true;
-  }
-  return false;
+  size_t i = page_find(page);
+  return i != pages_.size() && pages_[i].pending != 0;
 }
 bool Registry::fork_clean() const noexcept {
   for (const auto& record : records_)

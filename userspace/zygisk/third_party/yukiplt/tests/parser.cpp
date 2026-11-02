@@ -13,11 +13,11 @@
 #include <vector>
 
 #include "aps2_encoder.hpp"
-#include "elf_builder.hpp"
 #include "elf.hpp"
+#include "elf_builder.hpp"
 #include "imports.hpp"
-#include "overrides.hpp"
 #include "memory.hpp"
+#include "overrides.hpp"
 #include "registry.hpp"
 #include "versioned_elf.hpp"
 #include "yukiplt.hpp"
@@ -439,7 +439,7 @@ TEST_F(FuncInstallFixture, ZeroValuedGlobDatSlotIsRefusedWholeBatchZeroModificat
 
 TEST_F(FuncInstallFixture, UnsupportedMatchRejectsBatchBeforeAnyWrite) {
   ElfBuilder b;
-  b.add_symbol("good", 1);
+  b.add_symbol("good", 1).set_symbol_undefined(1);
   b.add_symbol("bad", 2).set_symbol_undefined(2).set_symbol_type(2, STT_OBJECT);
   b.add_jump_slot(1);
   b.add_rela(2, YUKIPLT_RELOC_GLOB_DAT, 0);
@@ -458,6 +458,142 @@ TEST_F(FuncInstallFixture, UnsupportedMatchRejectsBatchBeforeAnyWrite) {
   EXPECT_EQ(cas_calls, 0u);
   EXPECT_EQ(maps_calls, 0u);
   EXPECT_EQ(live_groups(), baseline);
+}
+
+TEST_F(FuncInstallFixture, ExplicitJumpSlotRequiresUndefinedFunctionAndZeroAddend) {
+  for (int invalid = 0; invalid < 6; ++invalid) {
+#if !YUKIPLT_USES_RELA
+    if (invalid == 5) continue;
+#endif
+    ElfBuilder b;
+    b.add_symbol("target", 1).set_symbol_undefined(1);
+    const uint8_t types[] = {STT_OBJECT, STT_NOTYPE, STT_TLS, 10};
+    if (invalid < 4) b.set_symbol_type(1, types[invalid]);
+    if (invalid == 4) b.set_symbol_undefined(1, false);
+    b.add_jump_slot(1, invalid == 5 ? 1 : 0);
+    set_backing(b.build());
+    wr(image.got_slot_addr(0), 0x1111);
+    auto selector = sel("target", kSourceJmprel, kTypeJumpSlot);
+    const auto baseline = live_groups();
+    auto result = hook_function_import(view(), selector, kReplA, &outputs[0]);
+    EXPECT_EQ(result.error.code, ErrorCode::kUnsupportedRelocation) << invalid;
+    EXPECT_FALSE(result.handle.valid());
+    EXPECT_EQ(rd(image.got_slot_addr(0)), 0x1111u);
+    EXPECT_EQ(outputs[0], nullptr);
+    EXPECT_EQ(cas_calls, 0u);
+    EXPECT_EQ(maps_calls, 0u);
+    EXPECT_EQ(live_groups(), baseline);
+    FunctionHookTarget target{view(), {selector, kReplA, nullptr, false, 0}};
+    EXPECT_EQ(build_function_hook_plan(&target, 1).error().code, ErrorCode::kUnsupportedRelocation);
+    auto legacy = hook(view(), "target", kReplA, nullptr);
+    ASSERT_TRUE(legacy.ok());
+    EXPECT_FALSE(unhook(legacy.handle));
+    cas_calls = maps_calls = 0;
+  }
+}
+
+TEST_F(FuncInstallFixture, LegacyBatchKeepsRequestOrderAndValidatesUnselectedImports) {
+  for (size_t count : {1u, 8u, 9u, 64u}) {
+    ElfBuilder b;
+    std::vector<std::string> names;
+    for (size_t i = 0; i <= count; ++i) {
+      names.push_back("indexed_import_" + std::to_string(i));
+      b.add_symbol(names.back().c_str(), i + 1).add_jump_slot(i + 1);
+    }
+    set_backing(b.build());
+    std::vector<HookRequest> requests;
+    std::vector<SlotReport> reports(count);
+    for (size_t i = 0; i < count; ++i) {
+      wr(image.got_slot_addr(i), 0x1111 + i);
+      requests.push_back({names[count - i - 1].c_str(), kReplA, nullptr});
+    }
+    auto installed = hook_batch(view(), requests.data(), count, reports.data());
+    ASSERT_TRUE(installed.ok());
+    for (size_t i = 0; i < count; ++i) {
+      EXPECT_EQ(reports[i].address, image.got_slot_addr(count - i - 1));
+      EXPECT_EQ(rd(reports[i].address), reinterpret_cast<uintptr_t>(kReplA));
+    }
+    ASSERT_FALSE(unhook(installed.handle));
+    if (count > 1) {
+      requests.back().symbol = requests.front().symbol;
+      EXPECT_EQ(hook_batch(view(), requests.data(), count).error.code, ErrorCode::kInvalidArgument);
+    }
+    auto inspected = detail::inspect(image.load_bias(), image.phdr_table(), image.phdr_count);
+    ASSERT_TRUE(inspected);
+    auto* symbol = reinterpret_cast<NativeElfSym*>(inspected.value().symtab) + count + 1;
+    symbol->st_name = inspected.value().strsz;
+    requests[0].symbol = nullptr;
+    cas_calls = maps_calls = 0;
+    auto bad = hook_batch(view(), requests.data(), count);
+    EXPECT_EQ(bad.error.code, ErrorCode::kCorruptedElf);
+    EXPECT_FALSE(bad.handle.valid());
+    EXPECT_EQ(cas_calls, 0u);
+    EXPECT_EQ(maps_calls, 0u);
+  }
+}
+
+TEST_F(FuncInstallFixture, IndexedSelectorsPreserveCollisionsChainsAndErrorOrder) {
+  auto bucket = [](const std::string& name) {
+    size_t value = 2166136261u;
+    for (unsigned char c : name) value = (value ^ c) * 16777619u;
+    return value & 127;
+  };
+  std::vector<std::string> names{"same_name", "same_name"};
+  for (size_t i = 0; names.size() < 64; ++i) {
+    auto name = "collision_" + std::to_string(i);
+    if (bucket(name) == bucket(names[0])) names.push_back(std::move(name));
+  }
+  for (size_t count : {8u, 9u, 64u}) {
+    for (bool invalid_tail : {false, true}) {
+      ElfBuilder builder;
+      for (size_t i = 0; i < count; ++i)
+        builder.add_symbol(names[i].c_str(), i + 1)
+            .set_symbol_undefined(i + 1)
+            .add_jump_slot(i + 1);
+      if (invalid_tail)
+        builder.add_symbol(names[0].c_str(), count + 1)
+            .set_symbol_undefined(count + 1)
+            .set_symbol_type(count + 1, STT_OBJECT)
+            .add_jump_slot(count + 1);
+      set_backing(builder.build());
+      std::vector<SelectedHookRequest> selected;
+      std::vector<FunctionHookRequest> functions;
+      std::vector<SlotReport> reports(count);
+      for (size_t i = 0; i < count; ++i) {
+        ImportSelector target{names[i].c_str()};
+        target.relocation_index = i;
+        selected.push_back({target, kReplA, nullptr});
+        functions.push_back({{target, kSourceJmprel, kTypeJumpSlot}, kReplA, nullptr});
+        wr(image.got_slot_addr(i), 0x1111 + i);
+      }
+      auto legacy = hook_imports(view(), selected.data(), count, reports.data());
+      ASSERT_TRUE(legacy.ok());
+      for (size_t i = 0; i < count; ++i) EXPECT_EQ(reports[i].address, image.got_slot_addr(i));
+      ASSERT_FALSE(unhook(legacy.handle));
+      auto explicit_functions =
+          hook_function_imports(view(), functions.data(), count, reports.data());
+      ASSERT_TRUE(explicit_functions.ok());
+      for (size_t i = 0; i < count; ++i) EXPECT_EQ(reports[i].address, image.got_slot_addr(i));
+      ASSERT_FALSE(unhook(explicit_functions.handle));
+
+      selected[0].target.relocation_index = ~size_t{0};
+      functions[0].target.base.relocation_index = ~size_t{0};
+      cas_calls = maps_calls = 0;
+      EXPECT_EQ(hook_imports(view(), selected.data(), count).error.code,
+                ErrorCode::kAmbiguousSymbol);
+      EXPECT_EQ(hook_function_imports(view(), functions.data(), count).error.code,
+                invalid_tail ? ErrorCode::kUnsupportedRelocation : ErrorCode::kAmbiguousSymbol);
+      functions[1].target.base = functions[0].target.base;
+      functions[0].target.base.symbol = "missing";
+      EXPECT_EQ(hook_function_imports(view(), functions.data(), count).error.code,
+                ErrorCode::kSymbolNotFound);
+      std::swap(functions[0], functions[1]);
+      EXPECT_EQ(hook_function_imports(view(), functions.data(), count).error.code,
+                invalid_tail ? ErrorCode::kUnsupportedRelocation : ErrorCode::kAmbiguousSymbol);
+      EXPECT_EQ(cas_calls, 0u);
+      EXPECT_EQ(maps_calls, 0u);
+    }
+  }
 }
 
 TEST_F(FuncInstallFixture, ZeroWeakJumpSlotRemainsSupported) {
@@ -504,6 +640,24 @@ TEST(Versions, VersymCannotAliasNamedVersionRecordsOrChangeSelection) {
 
     EXPECT_TRUE(inspect_imports(fixture.view()));
   }
+}
+
+TEST(Versions, FunctionSnapshotOwnsVersionTextAfterImageChanges) {
+  VersionedElf fixture;
+  auto snapshot = inspect_function_imports(fixture.view(), kSourceJmprel);
+  ASSERT_TRUE(snapshot);
+  ASSERT_EQ(snapshot.value().imports.size(), 2u);
+  EXPECT_EQ(snapshot.value().imports[0].base.version.name, "VERSION_1");
+  EXPECT_TRUE(snapshot.value().imports[0].base.version.hidden);
+  EXPECT_EQ(snapshot.value().imports[1].base.version.name, "VERSION_2");
+  std::memset(fixture.image.buffer.data(), 0, fixture.image.buffer.size());
+  for (const auto& entry : snapshot.value().imports) {
+    EXPECT_EQ(entry.base.import.symbol, "versioned");
+    EXPECT_EQ(entry.base.version.dependency, "libversions.so");
+    EXPECT_EQ(entry.base.version.source, VersionSource::kNeeded);
+  }
+  EXPECT_EQ(snapshot.value().imports[0].base.version.name, "VERSION_1");
+  EXPECT_EQ(snapshot.value().imports[1].base.version.name, "VERSION_2");
 }
 
 }  // namespace versions_checks

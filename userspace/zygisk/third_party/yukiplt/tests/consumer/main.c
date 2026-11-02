@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #include "../c_abi_layout_checks.h"
-
 #include "yukiplt.h"
 int run_c_scenarios(void);
 static int metadata_anchor;

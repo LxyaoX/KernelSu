@@ -124,14 +124,12 @@ void prepare(void* backend) noexcept {
       errno = saved;
       return;
     }
-    if (configuring.load()) {
+    if (configuring.load() || (lock.held && start && previous == YUKIPLT_C_FORK_DRAINING)) {
       cycle_reason = YUKIPLT_C_FORK_REASON_PROTOCOL;
     } else if (!lock.held || !start) {
       cycle_reason = YUKIPLT_C_FORK_REASON_TIMEOUT;
     } else if (rejected_before_cycle) {
       cycle_reason = reason.load();
-    } else if (previous == YUKIPLT_C_FORK_DRAINING) {
-      cycle_reason = YUKIPLT_C_FORK_REASON_PROTOCOL;
     } else if (admitted(current_thread())) {
       cycle_reason = YUKIPLT_C_FORK_REASON_REENTRY;
     }

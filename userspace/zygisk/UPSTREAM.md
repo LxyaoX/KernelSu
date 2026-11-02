@@ -13,11 +13,11 @@ and the same list of files under `userspace/zygisk`.
 ## Pinned source
 
 - KernelSU: https://github.com/Rouyashiki/YukiSU
-  commit `5c260d1c6` (branch `main`), which is `a90d1fa9` plus the four zygisk
+  commit `3e8b8ecf6` (branch `main`), which is `a90d1fa9` plus the six zygisk
   commits below. Imported paths: `userspace/zygisk/**`,
   `kernel/feature/yukizygisk/**`, `uapi/yukizygisk.h`.
 - YukiPLT: https://github.com/Rouyashiki/YukiPLT
-  commit `bb58c2750af6a126e221b5d1b579b9dc1a216f55`.
+  commit `f8988f3730cc93ba8121d0e0a3873f320dda7497`.
 
   | upstream commit | what it changed |
   | --- | --- |
@@ -25,6 +25,8 @@ and the same list of files under `userspace/zygisk`.
   | `d09348b63` | cached hook registry per Core, managed fork, and the YukiPLT pin bump to `bb58c275` |
   | `485e94b90` | ARM32 only: the `musttail` return in `yuki_bootstrap_tango` now carries its `NOLINTNEXTLINE` |
   | `5c260d1c6` | one lifetime rule for the managed fork and the cached hooks: a fork is published only after the hook registry is sealed, and the registry is retired before the fork is released |
+  | `bb215474f` | native companion bindings are published through one atomic hand-off (`native_module_binding.hpp`) instead of being written field by field |
+  | `8c122fc7a` | YukiPLT pin to `f8988f37` (Clang formatting, separate/minimised library artifacts, optional Full LTO for Release) |
   | `551083a62` | **not taken**: it fixes `userspace/ksud/src/yzctl.cpp`, which this tree does not have (ksud is Rust and never calls `YZ_RELOAD`) |
 
   | upstream path | vendored path |

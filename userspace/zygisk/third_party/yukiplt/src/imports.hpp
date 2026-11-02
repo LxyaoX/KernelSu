@@ -14,6 +14,16 @@ namespace yukiplt::detail {
 
 // Pure parsing over an inspected image whose metadata remains readable.
 // May allocate; the public API catches failures before leaving the loader callback.
+struct ImportView {
+  std::string_view symbol;
+  uint32_t symbol_index;
+  size_t relocation_index;
+  uintptr_t slot_address;
+};
+// Views expire when the caller's image stability window ends. The visitor
+// cannot stop validation of later records or the final duplicate-slot check.
+Error walk_imports(const InspectedImage&, void (*visit)(void*, const ImportView&), void*,
+                   size_t& skipped);
 Result<ImportSnapshot> snapshot_imports(const InspectedImage& image);
 
 // Upper bound on the dynamic symbol table index, derived from a hash table or,
@@ -30,6 +40,7 @@ Result<VersionedImportSnapshot> resolve_versions(const InspectedImage& image,
                                                  size_t skipped_relocations,
                                                  ScanBudget* budget = nullptr);
 Error validate_selector(const ImportSelector& selector) noexcept;
+bool import_matches(const VersionedImport&, const ImportSelector&) noexcept;
 Result<size_t> select_import(const VersionedImportSnapshot& snapshot,
                              const ImportSelector& selector);
 
@@ -56,6 +67,7 @@ Result<RawFunctionSnapshot> inspect_function_relocs(const ImageView&, uint32_t s
                                                     ScanBudget* budget = nullptr,
                                                     const char* expected_path = nullptr);
 bool function_reloc_acceptable(const FunctionReloc&) noexcept;
+bool function_reloc_matches(const FunctionReloc&, const FunctionImportSelector&) noexcept;
 
 // `sources` is a non-zero subset of RelocationSourceBit.  Validates RELA/APS2
 // metadata lazily (inspect() never fails on it).

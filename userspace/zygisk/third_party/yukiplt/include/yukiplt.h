@@ -155,7 +155,7 @@ typedef struct yukiplt_c_selector {
   size_t relocation_index;  // YUKIPLT_C_ANY_RELOCATION for no index filter.
 } yukiplt_c_selector;
 #define YUKIPLT_C_SELECTOR(name) \
-  { (name), YUKIPLT_C_VERSION_ANY, NULL, NULL, YUKIPLT_C_HIDDEN_ANY, YUKIPLT_C_ANY_RELOCATION }
+  {(name), YUKIPLT_C_VERSION_ANY, NULL, NULL, YUKIPLT_C_HIDDEN_ANY, YUKIPLT_C_ANY_RELOCATION}
 typedef struct yukiplt_c_request {
   yukiplt_c_selector target;
   void* replacement;
@@ -267,14 +267,12 @@ typedef struct yukiplt_c_function_selector {
   uint32_t index_source;  // YUKIPLT_C_RELOC_SOURCE_*; scopes base.relocation_index.
   yukiplt_c_selector base;
 } yukiplt_c_function_selector;
-#define YUKIPLT_C_FUNCTION_SELECTOR(name)                                                  \
-  {                                                                                        \
-    (uint32_t)sizeof(yukiplt_c_function_selector),                                         \
-        YUKIPLT_C_SOURCE_JMPREL | YUKIPLT_C_SOURCE_NATIVE_DYNAMIC |                        \
-            YUKIPLT_C_SOURCE_NATIVE_ANDROID_PACKED,                                        \
-        YUKIPLT_C_TYPE_JUMP_SLOT | YUKIPLT_C_TYPE_GLOB_DAT, YUKIPLT_C_RELOC_SOURCE_JMPREL, \
-        YUKIPLT_C_SELECTOR(name)                                                           \
-  }
+#define YUKIPLT_C_FUNCTION_SELECTOR(name)                                             \
+  {(uint32_t)sizeof(yukiplt_c_function_selector),                                     \
+   YUKIPLT_C_SOURCE_JMPREL | YUKIPLT_C_SOURCE_NATIVE_DYNAMIC |                        \
+       YUKIPLT_C_SOURCE_NATIVE_ANDROID_PACKED,                                        \
+   YUKIPLT_C_TYPE_JUMP_SLOT | YUKIPLT_C_TYPE_GLOB_DAT, YUKIPLT_C_RELOC_SOURCE_JMPREL, \
+   YUKIPLT_C_SELECTOR(name)}
 typedef struct yukiplt_c_function_request {
   yukiplt_c_function_selector target;
   void* replacement;
@@ -358,9 +356,9 @@ YUKIPLT_API int yukiplt_c_has_feature(uint32_t feature_id) YUKIPLT_C_NOEXCEPT;
 // sources).  Same image/selector/transaction/ownership/original-output contract
 // as yukiplt_c_hook/yukiplt_c_hook_batch.  Each selector's struct_size must equal
 // sizeof(yukiplt_c_function_selector), and its sources/types masks must both be
-// nonzero.  Acceptance is a whitelist: a slot is hookable only as JUMP_SLOT, or
-// as GLOB_DAT whose import symbol is an undefined STT_FUNC with addend zero and a
-// nonzero current slot value; any other matched relocation fails the whole call
+// nonzero. Both JUMP_SLOT and GLOB_DAT require an undefined STT_FUNC with zero
+// effective addend. Only GLOB_DAT additionally requires a nonzero current slot
+// value; any ineligible matched relocation fails the whole call
 // with UNSUPPORTED_RELOCATION and modifies nothing.  Unhook/abandon/query with
 // the shared yukiplt_c_unhook/abandon/query functions.
 YUKIPLT_API yukiplt_c_error

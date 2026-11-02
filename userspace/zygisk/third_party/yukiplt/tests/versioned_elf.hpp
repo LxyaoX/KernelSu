@@ -4,8 +4,8 @@
 #ifndef YUKIPLT_TEST_VERSIONED_ELF_HPP_
 #define YUKIPLT_TEST_VERSIONED_ELF_HPP_
 
-#include "elf_builder.hpp"
 #include "elf.hpp"
+#include "elf_builder.hpp"
 #include "yukiplt.hpp"
 
 namespace yukiplt::test {

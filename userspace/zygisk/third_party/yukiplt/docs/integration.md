@@ -23,8 +23,9 @@ The name/version APIs handle `JUMP_SLOT` only. For function imports use
 `inspect_function_imports()` and `hook_function_import(s)()` with explicit source
 and type masks. Portable source constants are `kSourceNativeDynamic` and
 `kSourceNativeAndroidPacked`; REL and RELA constants remain distinct.
-Eligible `GLOB_DAT` imports must be undefined `STT_FUNC`, have effective addend
-zero and a nonzero current slot. A zero `JUMP_SLOT` is allowed. An ineligible
+Both explicit function relocation types require an undefined `STT_FUNC` with
+effective addend zero. `GLOB_DAT` also requires a nonzero current slot; a zero
+`JUMP_SLOT` is allowed. An ineligible
 matched import rejects the entire request before modification.
 
 Use `hook_batch_nonnull_diagnosed_named()` when every replacement needs a callable

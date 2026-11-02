@@ -30,7 +30,8 @@ bool readable(const InspectedImage& image, uintptr_t address, size_t size) {
 }
 
 template <typename T>
-Result<T> read(const InspectedImage& image, uintptr_t base, size_t index = 0) {
+[[gnu::always_inline]] inline Result<T> read(const InspectedImage& image, uintptr_t base,
+                                             size_t index = 0) {
   if (index > std::numeric_limits<uintptr_t>::max() / sizeof(T))
     return Error::Make(ErrorCode::kIntegerOverflow);
   uintptr_t address;
@@ -125,7 +126,11 @@ Result<size_t> symbol_count(const InspectedImage& image) {
 
 Result<size_t> dynamic_symbol_count(const InspectedImage& image) { return symbol_count(image); }
 
-Result<ImportSnapshot> snapshot_imports(const InspectedImage& image) {
+namespace {
+template <bool Own>
+Result<ImportSnapshot> walk_imports_impl(const InspectedImage& image,
+                                         void (*visit)(void*, const ImportView&) = nullptr,
+                                         void* context = nullptr) {
   ImportSnapshot snapshot;
   if (image.jmprel_count == 0) return snapshot;
   auto count = symbol_count(image);
@@ -168,8 +173,13 @@ Result<ImportSnapshot> snapshot_imports(const InspectedImage& image) {
     if (address % kNativeSlotSize != 0 || !image.addr_in_writable_load(address, kNativeSlotSize))
       return Error::Make(ErrorCode::kCorruptedElf);
 
-    snapshot.imports.push_back(
-        {std::string(name, static_cast<size_t>(end - name)), symbol_index, i, address});
+    if constexpr (Own) {
+      snapshot.imports.push_back(
+          {std::string(name, static_cast<size_t>(end - name)), symbol_index, i, address});
+    } else {
+      visit(context,
+            {std::string_view(name, static_cast<size_t>(end - name)), symbol_index, i, address});
+    }
     addresses.push_back(address);
   }
   // Preserve table order in the snapshot; sort a separate address list so
@@ -178,6 +188,18 @@ Result<ImportSnapshot> snapshot_imports(const InspectedImage& image) {
   if (std::adjacent_find(addresses.begin(), addresses.end()) != addresses.end())
     return Error::Make(ErrorCode::kCorruptedElf);
   return snapshot;
+}
+}  // namespace
+
+Error walk_imports(const InspectedImage& image, void (*visit)(void*, const ImportView&),
+                   void* context, size_t& skipped) {
+  auto result = walk_imports_impl<false>(image, visit, context);
+  if (!result) return result.error();
+  skipped = result.value().skipped_relocations;
+  return Error::Ok();
+}
+Result<ImportSnapshot> snapshot_imports(const InspectedImage& image) {
+  return walk_imports_impl<true>(image);
 }
 
 namespace {
@@ -366,15 +388,10 @@ Error read_definitions(const InspectedImage& image, uintptr_t address, uint64_t 
 
 }  // namespace
 
-// Attach version metadata to a caller-supplied set of imports (from DT_JMPREL,
-// DT_RELA or DT_ANDROID_RELA).  Shared by snapshot_versioned_imports() and the
-// function-import path so version parsing lives in one place.
-Result<VersionedImportSnapshot> resolve_versions(const InspectedImage& image,
-                                                 std::vector<ImportInfo> imports,
-                                                 size_t skipped_relocations,
-                                                 ScanBudget* shared_budget) {
-  ScanBudget local_budget;
-  ScanBudget& budget = shared_budget ? *shared_budget : local_budget;
+namespace {
+template <typename EntryAt, typename Prepare, typename Store>
+Error resolve_versions_impl(const InspectedImage& image, size_t count, EntryAt entry_at,
+                            Prepare prepare, Store store, ScanBudget& budget) {
   auto tags = version_tags(image);
   if (!tags) return tags.error();
   const auto& t = tags.value();
@@ -403,7 +420,7 @@ Result<VersionedImportSnapshot> resolve_versions(const InspectedImage& image,
     // A referenced symbol proves this contiguous VERSYM prefix exists. Do not
     // use a LOAD-derived dynsym upper bound as an exact version-table count.
     uintptr_t last = 0;
-    for (const auto& entry : imports) last = std::max(last, uintptr_t{entry.symbol_index});
+    for (size_t i = 0; i < count; ++i) last = std::max(last, uintptr_t{entry_at(i).symbol_index});
     uintptr_t count, bytes, end;
     if (!safe_add(last, 1, count) || !safe_mul(count, sizeof(NativeElfHalf), bytes) ||
         !safe_add(versym, bytes, end))
@@ -414,11 +431,10 @@ Result<VersionedImportSnapshot> resolve_versions(const InspectedImage& image,
         (next != scan.ranges.begin() && std::prev(next)->second > versym))
       return Error::Make(ErrorCode::kCorruptedElf);
   }
-  VersionedImportSnapshot result;
-  result.skipped_relocations = skipped_relocations;
-  if (Error e = budget.take_objects<VersionedImport>(imports.size())) return e;
-  result.imports.reserve(imports.size());
-  for (auto& entry : imports) {
+  if (Error e = budget.take_objects<VersionedImport>(count)) return e;
+  prepare(count);
+  for (size_t i = 0; i < count; ++i) {
+    auto& entry = entry_at(i);
     SymbolVersion version;
     version.table_present = t.present[0];
     if (t.present[0]) {
@@ -444,8 +460,29 @@ Result<VersionedImportSnapshot> resolve_versions(const InspectedImage& image,
         version.source = found->source;
       }
     }
-    result.imports.push_back({std::move(entry), std::move(version)});
+    store(i, std::move(version));
   }
+  return Error::Ok();
+}
+
+}  // namespace
+
+Result<VersionedImportSnapshot> resolve_versions(const InspectedImage& image,
+                                                 std::vector<ImportInfo> imports,
+                                                 size_t skipped_relocations,
+                                                 ScanBudget* shared_budget) {
+  ScanBudget local_budget;
+  ScanBudget& budget = shared_budget ? *shared_budget : local_budget;
+  VersionedImportSnapshot result;
+  result.skipped_relocations = skipped_relocations;
+  auto error = resolve_versions_impl(
+      image, imports.size(), [&](size_t i) -> ImportInfo& { return imports[i]; },
+      [&](size_t count) { result.imports.reserve(count); },
+      [&](size_t i, SymbolVersion version) {
+        result.imports.push_back({std::move(imports[i]), std::move(version)});
+      },
+      budget);
+  if (error) return error;
   return result;
 }
 
@@ -475,6 +512,18 @@ Error validate_selector(const ImportSelector& selector) noexcept {
   return Error::Ok();
 }
 
+bool import_matches(const VersionedImport& entry, const ImportSelector& selector) noexcept {
+  return !(
+      entry.import.symbol != selector.symbol ||
+      (selector.relocation_index != ~size_t{0} &&
+       entry.import.relocation_index != selector.relocation_index) ||
+      (selector.version_match == VersionMatch::kUnversioned && entry.version.index >= 2) ||
+      (selector.version_match == VersionMatch::kExact && entry.version.name != selector.version) ||
+      (selector.dependency != nullptr && entry.version.dependency != selector.dependency) ||
+      (selector.hidden == HiddenMatch::kHidden && !entry.version.hidden) ||
+      (selector.hidden == HiddenMatch::kNonHidden && entry.version.hidden));
+}
+
 Result<size_t> select_import(const VersionedImportSnapshot& snapshot,
                              const ImportSelector& selector) {
   auto invalid = validate_selector(selector);
@@ -482,16 +531,7 @@ Result<size_t> select_import(const VersionedImportSnapshot& snapshot,
   size_t selected = ~size_t{0};
   for (size_t i = 0; i < snapshot.imports.size(); ++i) {
     const auto& entry = snapshot.imports[i];
-    if (entry.import.symbol != selector.symbol ||
-        (selector.relocation_index != ~size_t{0} &&
-         entry.import.relocation_index != selector.relocation_index) ||
-        (selector.version_match == VersionMatch::kUnversioned && entry.version.index >= 2) ||
-        (selector.version_match == VersionMatch::kExact &&
-         entry.version.name != selector.version) ||
-        (selector.dependency != nullptr && entry.version.dependency != selector.dependency) ||
-        (selector.hidden == HiddenMatch::kHidden && !entry.version.hidden) ||
-        (selector.hidden == HiddenMatch::kNonHidden && entry.version.hidden))
-      continue;
+    if (!import_matches(entry, selector)) continue;
     if (selected != ~size_t{0}) return Error::Make(ErrorCode::kAmbiguousSymbol);
     selected = i;
   }
@@ -921,15 +961,16 @@ Result<RawFunctionSnapshot> scan_function_imports(const InspectedImage& image, u
   }
   state.slots = {};
 
-  // Attach version metadata over the whole set, preserving order.
-  std::vector<ImportInfo> infos;
+  // Preserve the logical budget and its order while attaching versions in place.
   if (Error e = budget.take_objects<ImportInfo>(result.records.size())) return e;
-  infos.reserve(result.records.size());
-  for (auto& record : result.records) infos.push_back(std::move(record.entry.base.import));
-  auto versioned = resolve_versions(image, std::move(infos), result.skipped_relocations, &budget);
-  if (!versioned) return versioned.error();
-  for (size_t i = 0; i < result.records.size(); ++i)
-    result.records[i].entry.base = std::move(versioned.value().imports[i]);
+  auto error = resolve_versions_impl(
+      image, result.records.size(),
+      [&](size_t i) -> ImportInfo& { return result.records[i].entry.base.import; }, [](size_t) {},
+      [&](size_t i, SymbolVersion version) {
+        result.records[i].entry.base.version = std::move(version);
+      },
+      budget);
+  if (error) return error;
   return result;
 }
 
@@ -981,11 +1022,10 @@ uint32_t type_bit(uint32_t relocation_type) noexcept {
   return 0;
 }
 
-// A record is acceptable to hook only as JUMP_SLOT, or as GLOB_DAT with addend
-// zero, symbol type STT_FUNC and an undefined (imported) symbol.
+// Both explicit function relocation types require an undefined STT_FUNC.
 bool is_acceptable(const FunctionReloc& record) noexcept {
-  if (record.entry.relocation_type == kRelJumpSlot) return true;
-  if (record.entry.relocation_type != kRelGlobDat) return false;
+  if (record.entry.relocation_type != kRelJumpSlot && record.entry.relocation_type != kRelGlobDat)
+    return false;
   return record.addend == 0 && record.entry.symbol_type == kSttFunc && record.symbol_undefined;
 }
 
@@ -1010,6 +1050,13 @@ bool base_matches(const FunctionReloc& record, const FunctionImportSelector& sel
 
 }  // namespace
 
+bool function_reloc_matches(const FunctionReloc& record,
+                            const FunctionImportSelector& selector) noexcept {
+  return (source_bit(record.entry.source) & selector.sources) != 0 &&
+         (type_bit(record.entry.relocation_type) & selector.types) != 0 &&
+         base_matches(record, selector);
+}
+
 Result<size_t> select_function_reloc(const RawFunctionSnapshot& scan,
                                      const FunctionImportSelector& selector) {
   if (Error e = validate_function_selector(selector)) return e;
@@ -1018,9 +1065,7 @@ Result<size_t> select_function_reloc(const RawFunctionSnapshot& scan,
   for (size_t i = 0; i < scan.records.size(); ++i) {
     const FunctionReloc& record = scan.records[i];
     // Only records in the opted-in sources and types are candidates.
-    if ((source_bit(record.entry.source) & selector.sources) == 0) continue;
-    if ((type_bit(record.entry.relocation_type) & selector.types) == 0) continue;
-    if (!base_matches(record, selector)) continue;
+    if (!function_reloc_matches(record, selector)) continue;
     // A matched record that is not hookable fails the whole call: never skip it
     // and silently hook a different slot of the same name.
     if (!is_acceptable(record)) return Error::Make(ErrorCode::kUnsupportedRelocation);

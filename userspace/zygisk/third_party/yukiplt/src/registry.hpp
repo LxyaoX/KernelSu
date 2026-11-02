@@ -173,6 +173,7 @@ class Registry {
     ImageIdentity image;
     std::string system_path;
     SmallVec<SlotRecord, 2> slots;
+    SmallVec<uintptr_t, 2> pages;
     SmallVec<PageResidueRecord, 2> residue;
     RecoveryDiagnostic diagnostic;
     std::shared_ptr<MapsCacheState> cache;
@@ -204,6 +205,21 @@ class Registry {
   /// Make room for `extra` more entries at load factor <= 1/2.  May throw.
   void index_reserve(size_t extra);
 
+  struct PageEntry {
+    uintptr_t address = 0;
+    MapsCacheState* cache = nullptr;
+    size_t owners = 0;
+    size_t bindings = 0;
+    size_t pending = 0;
+  };
+  size_t page_find(uintptr_t page) const noexcept;
+  void page_reserve(size_t extra);
+  void page_insert(uintptr_t page) noexcept;
+  void page_erase(uintptr_t page) noexcept;
+  void unindex_pages(Record& record) noexcept;
+  void update_pending(const Record& record, bool add) noexcept;
+  SmallVec<PageEntry, 16> pages_;
+  size_t pages_used_ = 0;
   SmallVec<Record, 8> records_;
   SmallVec<uint32_t, 8> free_list_;
   SmallVec<IndexEntry, 16> index_;  ///< Size is 0 or a power of two.

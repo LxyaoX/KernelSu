@@ -43,13 +43,14 @@ struct Session final : Object {
   std::vector<Recovery> recovery;
   std::vector<uint8_t> attempted;
   bool can_destroy() const noexcept override {
-    return std::visit(
-        [](const auto& session) {
-          for (const auto& group : session.images())
-            if (group.handle.valid()) return false;
-          return true;
-        },
-        value);
+    const auto ready = [](const auto* session) noexcept {
+      if (!session) return false;
+      for (const auto& group : session->images())
+        if (group.handle.valid()) return false;
+      return true;
+    };
+    return ready(std::get_if<HookSession>(&value)) ||
+           ready(std::get_if<FunctionHookSession>(&value));
   }
 };
 template <typename T, typename H>

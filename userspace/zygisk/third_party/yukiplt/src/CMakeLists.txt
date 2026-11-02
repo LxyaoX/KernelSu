@@ -16,7 +16,14 @@ target_include_directories(yukiplt PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_options(yukiplt PRIVATE ${YUKIPLT_COMPILE_OPTIONS}
-    "$<$<AND:$<CONFIG:Release>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-Oz>")
+    "$<$<AND:$<CONFIG:Release>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-${YUKIPLT_RELEASE_OPTIMIZATION}>")
+if(YUKIPLT_LTO)
+    target_compile_options(yukiplt PRIVATE "$<$<CONFIG:Release>:-flto=full>")
+    target_link_options(yukiplt PRIVATE "$<$<CONFIG:Release>:-flto=full>")
+    if(YUKIPLT_LIBRARY_TYPE STREQUAL "STATIC")
+        target_link_options(yukiplt INTERFACE "$<$<CONFIG:Release>:-flto=full>")
+    endif()
+endif()
 target_link_libraries(yukiplt PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 if(WIN32)
     target_link_libraries(yukiplt PRIVATE bcrypt)
