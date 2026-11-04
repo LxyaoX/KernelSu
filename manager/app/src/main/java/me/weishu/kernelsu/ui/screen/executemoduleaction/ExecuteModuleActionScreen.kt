@@ -1,7 +1,7 @@
 package me.weishu.kernelsu.ui.screen.executemoduleaction
 
 import androidx.activity.compose.LocalActivity
-import androidx.compose.material3.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue

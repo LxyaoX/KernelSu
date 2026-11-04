@@ -16,7 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.Icon
+import top.yukonga.miuix.kmp.basic.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.ui.util.useFullFeaturedLayout
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.component.material.FolkIconButton
 import me.weishu.kernelsu.ui.component.rebootlistpopup.RebootListPopup
 import me.weishu.kernelsu.ui.navigation3.LocalNavOriginState
@@ -43,7 +42,6 @@ import me.weishu.kernelsu.ui.navigation3.navThemeSignature
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material3.TopAppBar as MaterialTopAppBar
 import me.weishu.kernelsu.media.VisualMediaConfig
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
@@ -158,11 +156,12 @@ private fun TopBar(
         RebootListPopup()
     }
     if (customTitleImage) {
-        MaterialTopAppBar(
-            title = { me.weishu.kernelsu.ui.component.HomeTitleImage() },
+        MiuixTopAppBar(
+            title = "",
+            color = MiuixTheme.colorScheme.surface,
+            scrollBehavior = scrollBehavior,
+            navigationIcon = { me.weishu.kernelsu.ui.component.HomeTitleImage() },
             actions = barActions,
-            colors = expressiveTopAppBarColors(),
-            windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         )
     } else {
         MiuixTopAppBar(

@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -91,7 +91,7 @@ fun SendLogBottomSheet(
                 loadingDialog.hide()
             }
             dismiss()
-            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.newestSnackbarData()?.dismiss()
             snackbarHostState.showSnackbar(logSaved)
         }
     }

@@ -1,38 +1,28 @@
 package me.weishu.kernelsu.ui.component.material
 
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarData
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import top.yukonga.miuix.kmp.basic.Snackbar
+import top.yukonga.miuix.kmp.basic.SnackbarData
+import top.yukonga.miuix.kmp.basic.SnackbarHost
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
+/**
+ * The app's snackbar host, drawn by miuix.
+ *
+ * It used to wrap Material's host in a `SwipeToDismissBox` to get swipe-to-dismiss; miuix's host
+ * has `canSwipeToDismiss` for that, so the wrapper is now just the host.
+ */
 @Composable
 fun SnackBarHost(
     modifier: Modifier = Modifier,
     hostState: SnackbarHostState,
     snackBar: @Composable (SnackbarData) -> Unit = { Snackbar(it) },
 ) {
-    val state = rememberSwipeToDismissBoxState()
-    SwipeToDismissBox(
-        state = state,
-        backgroundContent = {},
-        onDismiss = {
-            hostState.currentSnackbarData?.dismiss()
-        }
-    ) {
-        SnackbarHost(
-            modifier = modifier,
-            hostState = hostState,
-            snackbar = snackBar,
-        )
-    }
-    LaunchedEffect(hostState.currentSnackbarData) {
-        if (hostState.currentSnackbarData == null) return@LaunchedEffect
-        state.snapTo(SwipeToDismissBoxValue.Settled)
-    }
+    SnackbarHost(
+        state = hostState,
+        modifier = modifier,
+        canSwipeToDismiss = true,
+        content = snackBar,
+    )
 }
