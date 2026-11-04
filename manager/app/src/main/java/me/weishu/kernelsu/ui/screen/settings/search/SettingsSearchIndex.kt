@@ -496,16 +496,6 @@ val settingsSearchIndex: List<SettingsSearchEntry> = buildList {
         )
     )
     add(
-        SettingsCategory.FUNCTION.row(
-            id = "function.dynamic_manager",
-            titleRes = R.string.allow_any_dynamic_manager,
-            summaryRes = R.string.allow_any_dynamic_manager_summary,
-            icon = Icons.Filled.AdminPanelSettings,
-            aliases = listOf("dynamic manager", "manager", "superkey"),
-            available = { it.isDynamicManagerAvailable },
-        )
-    )
-    add(
         SettingsCategory.FUNCTION.page(
             id = "function.yukizygisk",
             titleRes = R.string.yukizygisk_title,

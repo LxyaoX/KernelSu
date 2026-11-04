@@ -1,6 +1,6 @@
 ---
 title: App Profile
-description: Configure Root, non-Root, templates, permissions, SELinux, and Dynamic Manager per UID
+description: Configure Root, non-Root, templates, permissions and SELinux per UID
 createTime: 2026/10/24 00:00:00
 permalink: /en/manager/app-profile/
 copyright:
@@ -140,25 +140,6 @@ A template usually contains an ID, a name, a description, and a set of Root prof
 
 See [App Profile Templates](/en/setting/profile-template/) for the full field reference.
 
-## Dynamic Manager
-
-The Dynamic Manager switch appears only when all of the following are true:
-
-- the current kernel supports Dynamic Manager;
-- the current entry is not a special UID;
-- the app is a preset manager, is already authorized, or the experimental "Allow any app to become a Dynamic Manager" option is enabled in Settings.
-
-When you turn the switch on, the Manager extracts the signing certificate size and SHA-256 of the target APK, registers the signature with the kernel, and authorizes this UID. When you turn it off:
-
-- new kernels that support an app ID authorization table revoke only that UID's management permission and keep the registered signature;
-- older kernels without separate revocation delete the whole signature registration.
-
-::: danger Dynamic Manager is highly privileged
-
-A Dynamic Manager can manage kernel Root. Do not authorize it just because the package name looks the same. After an upgrade, a re-sign, or a switch to a different build, verify it again. See [Dynamic Manager](/en/manager/dynamic-manager/).
-
-:::
-
 ## Shared UID
 
 Several packages can share one UID. The detail page shows "Affected apps" and lists every affected entry.
@@ -210,5 +191,4 @@ Several packages can share one UID. The detail page shows "Affected apps" and li
 
 - [Superuser](/en/manager/superuser/): find apps, UID groups, and authorization state.
 - [App Profile Templates](/en/setting/profile-template/): presets, custom templates, and import/export.
-- [Dynamic Manager](/en/manager/dynamic-manager/): manager trust and the difference in revocation.
 - [SU Logs](/en/manager/su-log/): confirm actual requests and results.

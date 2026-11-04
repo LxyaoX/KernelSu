@@ -135,15 +135,6 @@
     <string name="profile_selinux_context">SELinux 컨텍스트</string>
     <string name="profile_umount_modules">모듈 마운트 해제를 기본값으로</string>
     <string name="failed_to_update_app_profile">%s에 대한 앱 프로필 업데이트 실패</string>
-    <string name="set_as_dynamic_manager">동적 매니저로 설정</string>
-    <string name="set_as_dynamic_manager_summary">이 앱 서명을 유지하고 동적 매니저로 신뢰합니다</string>
-    <string name="dynamic_manager_set_failed">%s을(를) 동적 매니저로 설정하지 못했습니다</string>
-    <string name="dynamic_manager_del_failed">%s을(를) 동적 매니저에서 제거하지 못했습니다</string>
-    <string name="dynamic_manager_signature_unavailable">%s의 동적 매니저 서명을 추출할 수 없습니다</string>
-    <string name="allow_any_dynamic_manager">모든 앱을 동적 매니저로 허용</string>
-    <string name="allow_any_dynamic_manager_summary">실험적 기능입니다. 사전 설정된 매니저 서명뿐만 아니라 모든 앱에 동적 매니저 스위치를 표시합니다.</string>
-    <string name="dynamic_manager_badge">DYNAMIC KSU</string>
-    <string name="dynamic_manager_preset_badge">KSU</string>
     <string name="require_manager_version">매니저 업데이트가 필요합니다.</string>
     <string name="metric_unavailable">사용할 수 없음</string>
     <string name="require_kernel_version">커널 업데이트가 필요합니다. 탭하여 설치하세요.</string>

@@ -22,7 +22,7 @@ uint32_t get_version();
 std::string get_full_version();
 
 // Re-reads the kernel info explicitly and returns the fresh snapshot, bypassing the TTL cache.
-// Used when the caller must observe a just-changed identity (dynamic-manager grant/revoke).
+// Used when the caller must observe a just-changed identity, e.g. right after a manager change.
 struct ksu_get_info_cmd refresh_info();
 
 bool uid_should_umount(int uid);
@@ -64,20 +64,6 @@ bool is_avc_spoof_enabled();
 bool set_avc_spoof_enabled(bool enabled);
 
 bool get_allow_list(struct ksu_new_get_allow_list_cmd *);
-
-// Fetch the kernel-tracked dynamic-manager candidates (preset + user-claimed).
-// Writes at most max_count entries into apps, returns the number written and
-// stores the total tracked count in *total_count (may be null).
-uint32_t get_dynamic_managers(struct ksu_dynamic_manager_app *apps, uint32_t max_count,
-                              uint32_t *total_count);
-
-// §6.1 compatibility probe: dynamic-manager ioctls are only guaranteed when the
-// kernel UAPI matches the manager's; on a mismatch, probe KSU_FEATURE_DYNAMIC_MANAGER.
-bool is_dynamic_manager_enabled();
-
-// Probe KSU_FEATURE_DYNAMIC_MANAGER_GRANTS: the kernel then publishes only
-// authorized appids, so DYNAMIC_MANAGER_FLAG_GRANTED is the badge to read.
-bool is_dynamic_manager_grants_enabled();
 
 inline std::pair<int, int> legacy_get_info() {
     int32_t version = -1;

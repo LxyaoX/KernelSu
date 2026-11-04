@@ -177,13 +177,7 @@ App Profile 可以使用默认策略或模板，也可以按应用单独配置�
 
 ### 管理器身份
 
-内核默认只信任构建时写入的管理器签名。debug、自行编译或使用其他密钥签名的管理器不会自动获得管理权限。需要其他签名时，可以使用[动态管理器](/manager/dynamic-manager/)，但这会扩大内核信任范围。
-
-::: danger 不要随便信任任意管理器
-
-“允许任意应用作为动态管理器”是实验选项。被信任的管理器拥有管理内核 Root 的能力，只应对自己构建并校验过的 APK 使用。
-
-:::
+内核只信任构建时写入的那一个管理器签名。debug、自行编译或使用其他密钥签名的管理器不会获得管理权限；换签名只能重新构建内核，让固定槽位与新证书一致。
 
 ### su 兼容
 
@@ -198,7 +192,6 @@ FinaSU 保留 `su` 兼容层：符合条件的应用执行 `/system/bin/su` 时�
 ├── ksud                      # 用户态命令行工具（文件）
 ├── ksu/
 │   ├── .allowlist            # 授权状态
-│   ├── .dynamic_manager      # 管理器登记
 │   └── profile/              # App Profile
 ├── modules/
 │   └── <模块 ID>/
@@ -359,7 +352,6 @@ Root 按 UID 和 App Profile 管理。检查白名单、默认策略、Root Prof
 - [越狱模式安装](/guide/install/jailbreak/)
 - [更新 FinaSU](/guide/update/)
 - [常见问题](/guide/faq/)
-- [动态管理器](/manager/dynamic-manager/)
 - [救砖](/guide/rescue-bootloop/)
 
 *[LKM]: Loadable Kernel Module，可加载内核模块

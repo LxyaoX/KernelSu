@@ -93,7 +93,6 @@ fun rememberSettingsActions(
         onSetModuleDescriptionMaxLines = viewModel::setModuleDescriptionMaxLines,
         onSetAutoJailbreak = viewModel::setAutoJailbreak,
         onSetUseSoftReboot = viewModel::setUseSoftReboot,
-        onSetAllowAnyDynamicManager = viewModel::setAllowAnyDynamicManager,
         onOpenCategory = { key -> navigator.push(Route.SettingsCategory(key)) },
         onOpenAbout = { navigator.push(Route.About) },
     )

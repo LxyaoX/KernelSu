@@ -175,13 +175,7 @@ App Profile can use the default policy or a template, or be configured per app. 
 
 ### Manager Identity
 
-By default the kernel only trusts the Manager signature written at build time. Debug builds, self-built builds or Managers signed with another key do not gain management permission automatically. If you need another signature you can use a [Dynamic Manager](/en/manager/dynamic-manager/), but that widens the kernel's trust scope.
-
-::: danger Do not trust an arbitrary Manager
-
-"Allow any app as a dynamic manager" is an experimental option. A trusted Manager has the ability to manage kernel root, so use it only with an APK you built and verified yourself.
-
-:::
+The kernel trusts only the one Manager signature written at build time. Debug builds, self-built builds or Managers signed with another key gain no management permission; changing the signature means rebuilding the kernel so its fixed slot matches the new certificate.
 
 ### su Compatibility
 
@@ -196,7 +190,6 @@ A regular module is usually a ZIP with a `module.prop`. `ksud` unpacks it into `
 ├── ksud                      # userspace command-line tool (file)
 ├── ksu/
 │   ├── .allowlist            # authorization state
-│   ├── .dynamic_manager      # Manager registration
 │   └── profile/              # App Profile
 ├── modules/
 │   └── <module ID>/
@@ -357,7 +350,6 @@ No. They can load the same `kernelsu.ko`; the difference is the load timing and 
 - [Jailbreak Mode Installation](/en/guide/install/jailbreak/)
 - [Updating FinaSU](/en/guide/update/)
 - [FAQ](/en/guide/faq/)
-- [Dynamic Manager](/en/manager/dynamic-manager/)
 - [Bootloop Rescue](/en/guide/rescue-bootloop/)
 
 *[LKM]: Loadable Kernel Module, a kernel module that can be loaded at runtime

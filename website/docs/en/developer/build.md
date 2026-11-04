@@ -252,7 +252,7 @@ This means the current `ksud` build did not embed `ksuinit`. Run `./build.sh ksu
 
 ### The installed APK is not recognized as the Manager
 
-Check the APK certificate against the trust slot of the current kernel. A custom signature requires rebuilding the kernel or authorizing it through the dynamic manager.
+Check the APK certificate against the trust slot of the current kernel. A custom signature requires rebuilding the kernel so its fixed slot matches the new certificate.
 
 ### Only one KMI is available
 

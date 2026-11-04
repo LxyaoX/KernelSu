@@ -37,7 +37,7 @@ users to install as modules are vendored into this repository and driven by ksud
 /kernel/feature/              # sucompat, kernel_umount, selinux_hide, avc_spoof, module_blacklist, adb_root, shell_su_adb_only
 /kernel/hook/                 # syscall/lsm hook manager plus per-arch patch_memory and syscall trampolines
 /kernel/infra/                # file wrappers, event queue, seccomp cache, symbol resolver
-/kernel/manager/              # apk signature checks, package observer, throne tracker, dynamic managers
+/kernel/manager/              # apk signature checks, package observer, throne tracker
 /kernel/policy/               # allowlist, app profiles, feature toggles
 /kernel/runtime/              # boot events and ksud integration
 /kernel/selinux/              # sepolicy loading and rules

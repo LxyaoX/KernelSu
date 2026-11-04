@@ -43,7 +43,6 @@ ifneq ($(CONFIG_KSU_DISABLE_MANAGER),y)
 kernelsu-objs += manager/apk_sign.o
 kernelsu-objs += manager/pkg_observer.o
 kernelsu-objs += manager/throne_tracker.o
-kernelsu-objs += manager/dynamic_manager.o
 endif
 
 kernelsu-objs += policy/allowlist.o
@@ -78,9 +77,6 @@ kernelsu-$(CONFIG_KSU_SUSFS) += extension/susfs.o
 ifdef KBUILD_EXTMOD
 ifeq ($(CONFIG_KSU_DISABLE_MANAGER),y)
 ccflags-y += -DCONFIG_KSU_DISABLE_MANAGER=1
-endif
-ifneq ($(CONFIG_KSU_DYNAMIC_MANAGER),n)
-ccflags-y += -DCONFIG_KSU_DYNAMIC_MANAGER=1
 endif
 ifeq ($(CONFIG_KSU_DISABLE_POLICY),y)
 ccflags-y += -DCONFIG_KSU_DISABLE_POLICY=1
@@ -250,12 +246,6 @@ FINASU_TRUSTED_HASH := $(KSU_EXPECTED_HASH)
 endif
 ccflags-y += -DFINASU_TRUSTED_SIZE=$(FINASU_TRUSTED_SIZE)
 ccflags-y += -DFINASU_TRUSTED_HASH=\"$(FINASU_TRUSTED_HASH)\"
-
-# Recognition-only preset managers; bit mask selects which rows are compiled in.
-ifndef KSU_PRESET_MANAGER_MASK
-KSU_PRESET_MANAGER_MASK := 0xff
-endif
-ccflags-y += -DKSU_PRESET_MANAGER_MASK=$(KSU_PRESET_MANAGER_MASK)
 
 ccflags-y += -DKSU_NEW_DCACHE_FLUSH=$(KSU_NEW_DCACHE_FLUSH)
 

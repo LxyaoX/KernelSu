@@ -106,8 +106,6 @@ class SettingsViewModel(
             }
             val autoJailbreak = repo.autoJailbreak
             val useSoftReboot = repo.useSoftReboot
-            val allowAnyDynamicManager = repo.allowAnyDynamicManager
-            val isDynamicManagerAvailable = Natives.isDynamicManagerEnabled()
             val isLateLoadMode = Natives.isLateLoadMode
             val kernelFullVersionAvailable = Natives.isManager && !Natives.getFullVersion().isNullOrBlank()
 
@@ -164,8 +162,6 @@ class SettingsViewModel(
                     isLkmMode = isLkmMode,
                     autoJailbreak = autoJailbreak,
                     useSoftReboot = useSoftReboot,
-                    allowAnyDynamicManager = allowAnyDynamicManager,
-                    isDynamicManagerAvailable = isDynamicManagerAvailable,
                     isLateLoadMode = isLateLoadMode,
                     rekernelXStatus = rekernelXResult.getOrNull(),
                     rekernelXReadError = rekernelXResult.isFailure,
@@ -204,8 +200,6 @@ class SettingsViewModel(
                     colorStyle = repo.colorStyle,
                     autoJailbreak = repo.autoJailbreak,
                     useSoftReboot = repo.useSoftReboot,
-                    allowAnyDynamicManager = repo.allowAnyDynamicManager,
-                    isDynamicManagerAvailable = Natives.isDynamicManagerEnabled(),
                     isLateLoadMode = Natives.isLateLoadMode,
                     isLkmMode = repo.isLkmMode(),
                 )
@@ -460,11 +454,6 @@ class SettingsViewModel(
     fun setUseSoftReboot(enabled: Boolean) {
         repo.useSoftReboot = enabled
         _uiState.update { it.copy(useSoftReboot = enabled) }
-    }
-
-    fun setAllowAnyDynamicManager(enabled: Boolean) {
-        repo.allowAnyDynamicManager = enabled
-        _uiState.update { it.copy(allowAnyDynamicManager = enabled) }
     }
 
     fun setAvcSpoofEnabled(enabled: Boolean) {

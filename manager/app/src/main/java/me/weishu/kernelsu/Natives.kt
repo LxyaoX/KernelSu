@@ -110,38 +110,6 @@ object Natives {
     external fun getSuperuserCount(): Int
 
     /**
-     * Kernel-tracked dynamic-manager candidates, flattened as
-     * `[appid, flags, appid, flags, …]` with [DYNAMIC_MANAGER_FLAG_PRESET] /
-     * [DYNAMIC_MANAGER_FLAG_TRUSTED] / [DYNAMIC_MANAGER_FLAG_GRANTED] bits.
-     * Empty when unsupported or no candidates.
-     */
-    external fun getDynamicManagers(): IntArray
-
-    const val DYNAMIC_MANAGER_FLAG_PRESET = 1 shl 0
-    const val DYNAMIC_MANAGER_FLAG_TRUSTED = 1 shl 1
-
-    /**
-     * The appid is authorized *and* its signature is registered, i.e. the kernel
-     * really treats it as a dynamic manager. Only kernels that advertise the
-     * authorized-appid list ever set this.
-     */
-    const val DYNAMIC_MANAGER_FLAG_GRANTED = 1 shl 2
-
-    /**
-     * §6.1 compatibility mode: true when the dynamic-manager UI may be shown.
-     * Always true on a matching UAPI; on a mismatch it requires the kernel to
-     * advertise `KSU_FEATURE_DYNAMIC_MANAGER` (probed in cpp/ksu.cc).
-     */
-    external fun isDynamicManagerEnabled(): Boolean
-
-    /**
-     * True when the kernel honours an authorized-appid list
-     * (`KSU_FEATURE_DYNAMIC_MANAGER_GRANTS`). When false, sharing a registered
-     * certificate is enough and [DYNAMIC_MANAGER_FLAG_TRUSTED] is the badge.
-     */
-    external fun isDynamicManagerGrantsEnabled(): Boolean
-
-    /**
      * Online-store token. Returns "" when the app package name or signing-certificate hash does not
      * match the values baked in at build time (see cpp/security.cc and auth.properties).
      */

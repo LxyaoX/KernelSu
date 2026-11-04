@@ -737,7 +737,7 @@ mod config_tests {
         );
         for invalid in [
             "5=1",
-            "dynamic_manager=1",
+            "unknown_feature=1",
             "su_compat=-1",
             "su_compat=18446744073709551616",
             "su_compat",

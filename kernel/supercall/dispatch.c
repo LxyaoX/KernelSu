@@ -20,7 +20,6 @@
 #include "ksu.h"
 #include "runtime/ksud_boot.h"
 #include "feature/kernel_umount.h"
-#include "manager/dynamic_manager.h"
 #include "manager/manager_identity.h"
 #include "manager/throne_tracker.h"
 #include "selinux/selinux.h"
@@ -84,15 +83,6 @@ static int do_get_info(void __user *arg)
     cmd.features = KSU_FEATURE_MAX;
     cmd.uapi_version = KERNEL_SU_UAPI_VERSION;
 
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-    {
-        u32 dynamic_version;
-
-        if (ksu_dynamic_manager_version_code(current_uid().val, &dynamic_version))
-            cmd.version = dynamic_version;
-    }
-#endif
-
     if (copy_to_user(arg, &cmd, sizeof(cmd))) {
         pr_err("get_version: copy_to_user failed\n");
         return -EFAULT;
@@ -122,15 +112,6 @@ static int do_get_info_legacy(void __user *arg)
     cmd.flags |= KSU_GET_INFO_FLAG_PR_BUILD;
 #endif
     cmd.features = KSU_FEATURE_MAX;
-
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-    {
-        u32 dynamic_version;
-
-        if (ksu_dynamic_manager_version_code(current_uid().val, &dynamic_version))
-            cmd.version = dynamic_version;
-    }
-#endif
 
     if (copy_to_user(arg, &cmd, sizeof(cmd))) {
         pr_err("get_version: copy_to_user failed\n");
@@ -782,110 +763,6 @@ static int do_disable_escape_to_root(void __user *arg)
     return 0;
 }
 
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-static int do_set_dynamic_managers(void __user *arg)
-{
-    struct ksu_dynamic_manager_cmd cmd;
-    struct ksu_dynamic_manager_sign *signs = NULL;
-    bool need_rescan = false;
-    int ret;
-
-    if (copy_from_user(&cmd, arg, sizeof(cmd)))
-        return -EFAULT;
-
-    if (cmd.count > KSU_DYNAMIC_MANAGER_MAX_SIGNS)
-        return -EINVAL;
-
-    if (cmd.count) {
-        size_t size = sizeof(*signs) * cmd.count;
-        signs = kzalloc(size, GFP_KERNEL);
-        if (!signs)
-            return -ENOMEM;
-        if (copy_from_user(signs, (void __user *)(unsigned long)cmd.signs, size)) {
-            kfree(signs);
-            return -EFAULT;
-        }
-    }
-
-    ret = ksu_dynamic_manager_set(signs, cmd.count, &need_rescan);
-    kfree(signs);
-
-    if (ret == 0) {
-        ksu_dynamic_manager_persist();
-        if (need_rescan)
-            track_throne_force();
-    }
-
-    return ret;
-}
-
-static int do_get_dynamic_managers(void __user *arg)
-{
-    struct ksu_get_dynamic_managers_cmd cmd;
-    struct ksu_dynamic_manager_app *apps = NULL;
-    u32 count;
-    int ret = 0;
-
-    if (copy_from_user(&cmd, arg, sizeof(cmd)))
-        return -EFAULT;
-
-    if (cmd.count > KSU_DYNAMIC_MANAGER_MAX_APPS)
-        cmd.count = KSU_DYNAMIC_MANAGER_MAX_APPS;
-
-    if (cmd.count) {
-        apps = kzalloc(sizeof(*apps) * cmd.count, GFP_KERNEL);
-        if (!apps)
-            return -ENOMEM;
-    }
-
-    count = ksu_dynamic_manager_get_apps(apps, cmd.count, &cmd.total_count);
-    cmd.count = count;
-
-    if (count && copy_to_user((void __user *)(unsigned long)cmd.apps, apps, sizeof(*apps) * count))
-        ret = -EFAULT;
-
-    kfree(apps);
-
-    if (ret)
-        return ret;
-
-    if (copy_to_user(arg, &cmd, sizeof(cmd)))
-        return -EFAULT;
-
-    return 0;
-}
-
-static int do_set_dynamic_manager_grants(void __user *arg)
-{
-    struct ksu_dynamic_manager_grants_cmd cmd;
-    uid_t *appids = NULL;
-    int ret;
-
-    if (copy_from_user(&cmd, arg, sizeof(cmd)))
-        return -EFAULT;
-
-    if (cmd.reserved || cmd.count > KSU_DYNAMIC_MANAGER_MAX_APPS)
-        return -EINVAL;
-
-    if (cmd.count) {
-        size_t size = sizeof(*appids) * cmd.count;
-
-        appids = kzalloc(size, GFP_KERNEL);
-        if (!appids)
-            return -ENOMEM;
-        if (copy_from_user(appids, (void __user *)(unsigned long)cmd.appids, size)) {
-            kfree(appids);
-            return -EFAULT;
-        }
-    }
-
-    ret = ksu_dynamic_manager_set_grants(appids, cmd.count);
-    kfree(appids);
-
-    return ret;
-}
-#endif // CONFIG_KSU_DYNAMIC_MANAGER
-
 static int do_lookup_symbols(void __user *arg)
 {
     struct ksu_lookup_symbols_cmd cmd;
@@ -1489,26 +1366,6 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
         .perm_check = only_root,
         .allow_su_session = true
     },
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-    {
-        .cmd = KSU_IOCTL_SET_DYNAMIC_MANAGERS,
-        .name = "SET_DYNAMIC_MANAGERS",
-        .handler = do_set_dynamic_managers,
-        .perm_check = only_root
-    },
-    {
-        .cmd = KSU_IOCTL_GET_DYNAMIC_MANAGERS,
-        .name = "GET_DYNAMIC_MANAGERS",
-        .handler = do_get_dynamic_managers,
-        .perm_check = manager_or_root
-    },
-    {
-        .cmd = KSU_IOCTL_SET_DYNAMIC_MANAGER_GRANTS,
-        .name = "SET_DYNAMIC_MANAGER_GRANTS",
-        .handler = do_set_dynamic_manager_grants,
-        .perm_check = only_root
-    },
-#endif
     {
         .cmd = KSU_IOCTL_LOOKUP_SYMBOLS,
         .name = "LOOKUP_SYMBOLS",

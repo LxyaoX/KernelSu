@@ -164,9 +164,6 @@ First check whether that terminal app's own Root process comes from an allowed s
 
   Not necessarily. It only relaxes SELinux denial behavior; it does not fix file permissions, mounts, signatures or an app's own compatibility problems.
 
-- **Are ADB Root and "allow any app to become dynamic manager" the same thing?**
-
-  No. ADB Root changes the identity of the debug Shell; the dynamic manager option changes which apps can become the manager.
 
 - **Why does restricting the Shell source also affect ADB modules?**
 

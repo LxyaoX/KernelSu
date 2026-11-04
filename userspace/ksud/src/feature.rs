@@ -154,7 +154,10 @@ pub fn apply_config(features: &HashMap<u32, u64>) {
         if let Some(modules) = owners.get(&id)
             && !modules.iter().any(|module| module == &caller_module)
         {
-            log::info!("Skip feature {id}: declared by module(s) {}", modules.join(", "));
+            log::info!(
+                "Skip feature {id}: declared by module(s) {}",
+                modules.join(", ")
+            );
             continue;
         }
         if crate::ksucalls::get_feature(id).is_ok_and(|state| state.forced) {

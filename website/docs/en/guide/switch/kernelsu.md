@@ -589,7 +589,6 @@ Some beginner-oriented Jailbreak tools only support the package name, Activity, 
 ├── ksud                      # user-space command-line tool, replaced during a switch
 ├── ksu/
 │   ├── .allowlist            # authorization state
-│   ├── .dynamic_manager      # Manager registration
 │   └── profile/              # App Profile
 └── modules/                  # installed modules
 ```
@@ -598,7 +597,7 @@ KernelSU and FinaSU may use the same paths, so data that looks like it is "still
 
 - Recheck granted apps and the default policy.
 - Disable modules specific to the old Manager first, then enable them one by one.
-- Do not edit `.allowlist` or `.dynamic_manager` by hand.
+- Do not edit `.allowlist` by hand.
 - Do not copy the old Manager's APK, `ksud` or `kernelsu.ko` into the FinaSU directories.
 
 ::: warning Module compatibility

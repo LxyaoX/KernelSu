@@ -288,7 +288,6 @@ A/B 设备完成 OTA 后、尚未重启时，可选择“安装到未使用的�
 ├── ksud                      # 用户态命令行工具
 ├── ksu/
 │   ├── .allowlist            # 授权状态
-│   ├── .dynamic_manager      # 管理器登记
 │   └── profile/              # App Profile
 └── modules/                  # 已安装模块
 ```

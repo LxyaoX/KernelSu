@@ -163,13 +163,7 @@ Open the Superuser page in the Manager and look at the records first, then adjus
 
 ### Why does authentication fail after reinstalling the Manager?
 
-The kernel identifies the Manager by its APK signature. Debug builds, self-built builds or builds signed with another key are not trusted automatically. Prefer the official build; if you really need another signature, register it through the [Dynamic Manager](/en/manager/dynamic-manager/) flow and understand that this widens the kernel's trust scope.
-
-::: danger Do not casually enable "allow any app as a dynamic manager"
-
-That experimental option significantly widens the range of Managers that can be trusted. Use it only with an APK you built and verified yourself.
-
-:::
+The kernel identifies the Manager by its APK signature, and trusts only the one written at build time. Debug builds, self-built builds or builds signed with another key gain no management permission. Prefer the official build; if you really need another signature, rebuild the kernel so its fixed slot matches that APK's certificate.
 
 ### How do I hide root?
 

@@ -103,8 +103,8 @@ static int64_t g_version_at_ms = 0;
 // mechanism: identity revocation must be observed via an explicit refresh (see refresh_info()).
 static std::mutex g_info_mutex;
 
-// The MANAGER flag and the dynamic-manager version are mutable: a manager can be
-// authorized or revoked while this process runs. A cached answer must therefore
+// The MANAGER flag is mutable: a manager can be authorized or revoked while
+// this process runs. A cached answer must therefore
 // expire, or a revoked identity would stay "manager" forever. Stable fields
 // (kernel version, UAPI, feature mask) ride along in the same short-lived cache.
 static constexpr int64_t INFO_CACHE_TTL_MS = 1000;
@@ -170,19 +170,6 @@ uint32_t get_version() {
 
 bool get_allow_list(struct ksu_new_get_allow_list_cmd *cmd) {
     return ksuctl(KSU_IOCTL_NEW_GET_ALLOW_LIST, cmd) == 0;
-}
-
-uint32_t get_dynamic_managers(struct ksu_dynamic_manager_app *apps, uint32_t max_count,
-                              uint32_t *total_count) {
-    struct ksu_get_dynamic_managers_cmd cmd = {};
-    cmd.count = max_count;
-    cmd.apps = (uintptr_t) apps;
-    if (ksuctl(KSU_IOCTL_GET_DYNAMIC_MANAGERS, &cmd) == 0) {
-        if (total_count) *total_count = cmd.total_count;
-        return cmd.count;
-    }
-    if (total_count) *total_count = 0;
-    return 0;
 }
 
 bool is_safe_mode() {
@@ -331,27 +318,3 @@ bool set_avc_spoof_enabled(bool enabled) {
     return set_feature(KSU_FEATURE_AVC_SPOOF, enabled ? 1 : 0);
 }
 
-// Dynamic-manager support is advertised by KSU_FEATURE_DYNAMIC_MANAGER, not
-// by the UAPI version: the commands are additive, so a kernel that merely
-// shares uapi 5 is not guaranteed to implement them. Feature detection is
-// the only reliable probe.
-bool is_dynamic_manager_enabled() {
-    uint64_t value = 0;
-    bool supported = false;
-    if (!get_feature(KSU_FEATURE_DYNAMIC_MANAGER, &value, &supported)) {
-        return false;
-    }
-    return supported;
-}
-
-// The authorized-appid list is advertised separately from the dynamic-manager
-// capability itself: a kernel that only knows the signature list reports the old
-// feature, and the UI then falls back to "trusted == dynamic manager".
-bool is_dynamic_manager_grants_enabled() {
-    uint64_t value = 0;
-    bool supported = false;
-    if (!get_feature(KSU_FEATURE_DYNAMIC_MANAGER_GRANTS, &value, &supported)) {
-        return false;
-    }
-    return supported;
-}

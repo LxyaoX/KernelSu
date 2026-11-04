@@ -288,7 +288,6 @@ On an A/B device that has finished an OTA but not rebooted, you can choose "Inst
 ├── ksud                      # userspace command-line tool
 ├── ksu/
 │   ├── .allowlist            # authorization state
-│   ├── .dynamic_manager      # Manager registration
 │   └── profile/              # App Profile
 └── modules/                  # installed modules
 ```

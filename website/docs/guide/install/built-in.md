@@ -282,7 +282,6 @@ AnyKernel3 包里的脚本以 Root 权限运行，且可能在失败前已经写
 ├── ksud                      # 用户态命令行工具
 ├── ksu/
 │   ├── .allowlist            # 授权状态
-│   ├── .dynamic_manager      # 管理器登记
 │   └── profile/              # App Profile
 └── modules/                  # 已安装模块
 ```

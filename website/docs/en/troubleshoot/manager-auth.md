@@ -1,6 +1,6 @@
 ---
 title: Manager Authentication Failure
-description: Tell apart a missing driver, an untrusted APK signature, an unauthorized dynamic Manager and a UAPI mismatch
+description: Tell apart a missing driver, an untrusted APK signature and a UAPI mismatch
 createTime: 2026/10/24 00:00:00
 permalink: /en/troubleshoot/manager-auth/
 copyright:
@@ -23,7 +23,7 @@ The FinaSU Manager is not an ordinary viewer. The kernel only lets a trusted Man
 | Symptom | More likely cause | Check first |
 | --- | --- | --- |
 | The home screen shows no driver version at all and reports not installed / not supported | The driver is not loaded, the KMI/partition does not match, or the Manager identity does not hold | Installation method, boot partition, Manager certificate |
-| The device is rooted and another Manager works, but the current APK cannot manage it | The current APK's signature or UID has no management identity | Fixed signature, dynamic Manager authorization |
+| The device is rooted and another Manager works, but the current APK cannot manage it | The current APK's signature does not match the kernel's fixed slot | Use a signature the kernel trusts, or rebuild the kernel |
 | The home screen shows a driver version but asks to update the Manager/kernel | The Manager or `ksud` and the kernel UAPI disagree | Versions and UAPI numbers on both sides |
 | The home screen loads, but changing authorization, modules or capabilities fails | Management interface permission, `ksud`, or the specific capability | Driver runtime and SU log |
 | It breaks right after swapping the APK, and recovers after reinstalling the old APK | Management identity is bound to the signature | APK source and certificate |
@@ -44,14 +44,10 @@ The kernel embeds fixed trusted Manager signature information, including the cer
 flowchart TD
     A["Scan APKs in /data/app"] --> B{"Certificate matches the fixed slot?"}
     B -->|"Yes"| C["Record Manager package name and UID"]
-    B -->|"No"| D{"Matches a dynamic Manager registration?"}
-    D -->|"Yes"| E{"Is that UID authorized?"}
-    E -->|"Yes"| F["Can manage the driver"]
-    E -->|"No"| G["Recognized as a candidate, cannot manage"]
-    D -->|"No"| H["Regular app"]
+    B -->|"No"| H["Regular app"]
 ```
 
-There are three different concepts here:
+There are two different concepts here:
 
 ::::: field-group
 
@@ -60,19 +56,9 @@ There are three different concepts here:
 The kernel recognizes that the APK's signature may come from a known Manager, but does not grant management permission automatically. The Superuser list may show a `KSU` candidate badge.
 ::::
 
-:::: field Dynamic Manager registered
-@type `Trusted signature`
-The user actively adds an APK's certificate to the dynamic Manager table. The signature layer is already trusted; whether a UID must also be authorized depends on whether the current kernel supports a separate authorization table.
 ::::
 
-:::: field Current UID authorized
-@type `Actual identity`
-Newer kernels with a separate authorization table check the app ID as well. Older kernels treat a trusted signature directly as management identity and cannot revoke a single UID under the same signature.
-::::
-
-:::::
-
-Both the fixed Manager identity and the dynamic Manager resolve the app ID per Android user. An app in a work profile, an app clone or another Android user has to be judged by its actual UID and policy even when the package name is the same.
+The fixed Manager identity resolves the app ID per Android user, and an actual identity also requires the scanned package name and UID to match. An app in a work profile, an app clone or another Android user has to be judged by its actual UID and policy even when the package name is the same.
 
 ## Why a Package Name Is Not Evidence
 
@@ -82,7 +68,6 @@ All of the following give a "looks the same" APK a different identity:
 - different package name, but the certificate matches the kernel record;
 - the app was uninstalled and reinstalled, so the UID changed;
 - the same APK is installed in another Android user;
-- the dynamic Manager revoked only the UID authorization, while the signature registration remains.
 
 Therefore, do not "fix" authentication by renaming the package, faking the app label or modifying the kernel signature check. These weaken the whole Root management boundary and still do not prove the APK source is trustworthy.
 
@@ -118,21 +103,15 @@ Check whether the APK really is the build that pairs with the current kernel. A 
 
 ### A Self-Compiled APK Was Installed
 
-Self-compiled builds usually use a different certificate. If the kernel supports the dynamic Manager, you can set that UID as a dynamic Manager after confirming the APK source; if it does not, you can only use an APK that matches the kernel's fixed slot.
+Self-compiled builds usually use a different certificate, while the kernel trusts only its fixed slot. Changing the signature means rebuilding the kernel so the slot matches the new certificate; otherwise install a build the kernel accepts.
 
 ### It Stops Working After Uninstall and Reinstall
 
-Reinstalling may assign a new UID. Both the fixed Manager scan and dynamic Manager authorization may need to recognize it again; for the dynamic Manager, also confirm that the new UID is in the authorization table. A reboot usually triggers a new scan, but do not treat it as a replacement for checking.
+Reinstalling may assign a new UID. The fixed Manager scan has to recognize the package name and UID again; a reboot usually triggers a new scan, but do not treat it as a replacement for checking.
 
 ### Another Manager Works but This One Does Not
 
 Two APKs may connect to the same driver while only one of them has a trusted signature or UID. Do not let two Managers modify authorization or module state at the same time; decide which one is the real management end first, then revoke the other identity you no longer need.
-
-### `KSU` Still Shows After Disabling the Dynamic Manager
-
-`KSU` may only be a "preinstalled Manager candidate" badge, which does not mean management permission still exists. Newer kernels keep the signature registration but revoke the UID; on older kernels without separate revocation, disabling the switch may delete the whole signature registration.
-
-::::
 
 ## Safe Recovery Order
 
@@ -150,11 +129,7 @@ Two APKs may connect to the same driver while only one of them has a trusted sig
 
    Prefer the Manager from the same release build as the current driver. If several Managers are installed, record each APK's package name, version, installation source and UID.
 
-4. **Check whether the dynamic Manager is needed**
-
-   Grant the dynamic Manager in App Profile only when the current kernel supports the capability, the current app meets the display conditions, and you have confirmed the APK source. See [Dynamic Manager](/en/manager/dynamic-manager/) for details.
-
-5. **Check the UAPI and versions**
+4. **Check the UAPI and versions**
 
    Reopen the home screen and confirm the driver version, kernel UAPI and Manager UAPI. Update whichever side the prompt names.
 
@@ -166,7 +141,7 @@ Two APKs may connect to the same driver while only one of them has a trusted sig
 
 ::: danger Do not modify the kernel to bypass authentication
 
-Disabling signature checks, faking certificates, persistently modifying the allowlist or copying someone else's management state all give a wrong build full Root management capability. Authentication failures should be solved with a matching build or an explicit dynamic Manager.
+Disabling signature checks, faking certificates, persistently modifying the allowlist or copying someone else's management state all give a wrong build full Root management capability. Authentication failures should be solved by installing a build that matches the kernel's slot.
 
 :::
 
@@ -178,14 +153,13 @@ If authentication still fails after a matching installation, the report should i
 - the Manager package name, version, signature source and installing UID;
 - the driver version and UAPI shown on the home screen;
 - whether another Manager works;
-- whether the app was recently uninstalled, reinstalled, re-signed, or had the dynamic Manager changed;
+- whether the app was recently uninstalled, reinstalled or re-signed;
 - the archive exported by "Send logs" and the time the problem occurred.
 
 See [Reporting Issues](/en/troubleshoot/report/) for the full field list.
 
 ## Related Pages
 
-- [Dynamic Manager](/en/manager/dynamic-manager/): registration, authorization, revocation and persistence.
 - [Device Compatibility](/en/troubleshoot/compatibility/): driver, KMI, ABI and UAPI boundaries.
 - [Driver Runtime Errors](/en/troubleshoot/runtime/): `ksud` and module problems after the identity holds.
 - [Logs & Feedback](/en/troubleshoot/logs/): identity and version information in the log bundle.

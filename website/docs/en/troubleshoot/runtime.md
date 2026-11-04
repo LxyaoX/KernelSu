@@ -220,7 +220,6 @@ If the command itself reports a UAPI mismatch, stop trying modules or built-in c
     ├── nomount_runtime          # this boot's NoMount result
     ├── preinit_status           # pre-initialization state
     ├── .allowlist               # authorization and Profiles
-    └── .dynamic_manager         # dynamic Manager registrations
 ```
 
 These files are for diagnostics. Editing them directly can bypass transactions, locks and consistency checks, and also make the Manager display disagree with the real kernel state.

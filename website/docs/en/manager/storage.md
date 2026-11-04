@@ -35,8 +35,6 @@ Unless the relevant page explicitly says otherwise, do not modify these files di
 │   └── <plugin-id>/
 └── ksu/
     ├── .allowlist               # kernel Root authorization and App Profiles
-    ├── .dynamic_manager         # dynamic manager JSON maintained by ksud
-    ├── dynamic_manager          # kernel-persisted dynamic manager snapshot
     ├── .ksurc                   # ksud runtime config
     ├── bin/
     │   └── ksud -> /data/adb/ksud
@@ -75,17 +73,6 @@ The actual directories vary with the boot method, feature switches, and kernel s
 | `/data/adb/ksu/.ksurc` | The `ksud` runtime configuration. | Do not rewrite it casually with a plain text editor. |
 
 ::::
-
-## Dynamic Manager Files
-
-Dynamic Manager has two persistent states with different purposes:
-
-| Path | Maintained by | Content |
-| --- | --- | --- |
-| `/data/adb/ksu/.dynamic_manager` | `ksud` | A JSON list of signatures and authorized UIDs. |
-| `/data/adb/ksu/dynamic_manager` | The kernel | The binary snapshot needed to restore the trust table at boot. |
-
-The two are not interchangeable ordinary configuration files. Modifying either one can leave manager identity, the authorization list, or boot recovery inconsistent. To switch managers, use the [Dynamic Manager](/en/manager/dynamic-manager/) page.
 
 ## Regular Modules
 
@@ -207,7 +194,7 @@ Editing `mount_mode`, deleting `mount_inflight`, or hand-forging runtime records
 2. When a manual copy is needed, stop related writes and keep file permissions and SELinux contexts.
 3. Do not copy all of `/data/adb` over another device.
 4. Before restoring, check the device model, system version, Root deployment method, and where the paths came from.
-5. After restoring, re-check authorizations, modules, plugins, the Dynamic Manager, and mount state.
+5. After restoring, re-check authorizations, modules, plugins and mount state.
 
 :::
 
@@ -217,5 +204,4 @@ Editing `mount_mode`, deleting `mount_inflight`, or hand-forging runtime records
 - [Module Management](/en/manager/module/): regular module operations.
 - [Lua Plugins](/en/manager/plugin/): plugin directories and lifecycle.
 - [Kernel Modules](/en/manager/kernel-module/): `.ko` state and configuration.
-- [Dynamic Manager](/en/manager/dynamic-manager/): the purpose of the two Dynamic Manager states.
 - [Core Concepts](/en/guide/information/): background on the module system and system partitions.

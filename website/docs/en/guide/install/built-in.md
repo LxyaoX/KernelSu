@@ -282,7 +282,6 @@ Do not flash the old kernel onto a new system to save effort. When the kernel, v
 ├── ksud                      # userspace command-line tool
 ├── ksu/
 │   ├── .allowlist            # authorization state
-│   ├── .dynamic_manager      # Manager registration
 │   └── profile/              # App Profile
 └── modules/                  # installed modules
 ```

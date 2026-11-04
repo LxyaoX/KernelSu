@@ -52,7 +52,7 @@ flowchart TD
 | --- | --- | --- |
 | 刷入后不开机、启动动画循环、Recovery 可用或不可用 | 故障发生在启动链还是模块阶段 | [无法开机](/troubleshoot/bootloop/) |
 | 管理器显示“未安装”“不支持”或没有驱动版本 | 设备条件、KMI、ABI、分区和构建是否匹配 | [设备兼容性](/troubleshoot/compatibility/) |
-| 管理器能打开，但读写授权、模块或版本失败 | 管理器签名、动态管理器身份或 UAPI | [管理器认证失败](/troubleshoot/manager-auth/) |
+| 管理器能打开，但读写授权、模块或版本失败 | 管理器签名或 UAPI | [管理器认证失败](/troubleshoot/manager-auth/) |
 | 应用请求 Root 后没有授权或仍提示无 Root | 请求是否到达、UID 是否命中、Shell 来源是否受限 | [Root 授权请求不出现](/troubleshoot/root-request/) |
 | 驱动“已连接”但 `ksud`、模块或内置能力异常 | 用户态服务、运行模式或依赖链 | [驱动运行异常](/troubleshoot/runtime/) |
 | 模块或 Zygisk 能从其他应用看到，但目标应用看不到 | App Profile、挂载过滤、NoMount 例外或 SELinux | [检测与隐藏](/troubleshoot/detection/) |
@@ -193,7 +193,7 @@ flowchart TD
 
 ### 一上来清空 `/data/adb`
 
-这会删除模块、授权、Profile、动态管理器登记和日志，症状可能消失，但原因也被一并删掉。除非维护者明确要求并已备份，否则不要这样做。
+这会删除模块、授权、Profile 和日志，症状可能消失，但原因也被一并删掉。除非维护者明确要求并已备份，否则不要这样做。
 
 ### 同时关闭所有隐藏功能
 
@@ -236,7 +236,7 @@ flowchart TD
 
 - [无法开机](/troubleshoot/bootloop/)：区分启动链故障与模块故障。
 - [设备兼容性](/troubleshoot/compatibility/)：KMI、ABI、启动分区和构建矩阵。
-- [管理器认证失败](/troubleshoot/manager-auth/)：签名、动态管理器和 UAPI。
+- [管理器认证失败](/troubleshoot/manager-auth/)：签名和 UAPI。
 - [Root 授权请求不出现](/troubleshoot/root-request/)：请求、UID、Shell 与 Profile。
 - [驱动运行异常](/troubleshoot/runtime/)：`ksud`、模块、内置能力和运行模式。
 - [过检测](/troubleshoot/pass-detection/)：先保证目标应用可用，不追求检测工具全绿。

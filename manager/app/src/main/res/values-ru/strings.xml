@@ -135,15 +135,6 @@
     <string name="profile_selinux_context">Контекст SELinux</string>
     <string name="profile_umount_modules">Размонтировать модули</string>
     <string name="failed_to_update_app_profile">Не удалось обновить App Profile для %s</string>
-    <string name="set_as_dynamic_manager">Назначить динамическим менеджером</string>
-    <string name="set_as_dynamic_manager_summary">Сохранить подпись этого приложения и доверять ей как динамическому менеджеру</string>
-    <string name="dynamic_manager_set_failed">Не удалось назначить %s динамическим менеджером</string>
-    <string name="dynamic_manager_del_failed">Не удалось убрать %s из динамических менеджеров</string>
-    <string name="dynamic_manager_signature_unavailable">Не удалось извлечь подпись динамического менеджера для %s</string>
-    <string name="allow_any_dynamic_manager">Разрешить любое приложение как динамический менеджер</string>
-    <string name="allow_any_dynamic_manager_summary">Экспериментально. Показывать переключатель динамического менеджера для всех приложений, а не только для предустановленных подписей менеджера.</string>
-    <string name="dynamic_manager_badge">DYNAMIC KSU</string>
-    <string name="dynamic_manager_preset_badge">KSU</string>
     <string name="require_manager_version">Требуется обновить менеджер.</string>
     <string name="metric_unavailable">Недоступно</string>
     <string name="require_kernel_version">Требуется обновить ядро. Нажмите, чтобы установить.</string>

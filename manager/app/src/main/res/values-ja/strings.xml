@@ -135,15 +135,6 @@
     <string name="profile_selinux_context">SELinux コンテキスト</string>
     <string name="profile_umount_modules">モジュールのアンマウント</string>
     <string name="failed_to_update_app_profile">%s のアプリのプロファイルの更新をできませでした</string>
-    <string name="set_as_dynamic_manager">動的マネージャーとして設定</string>
-    <string name="set_as_dynamic_manager_summary">このアプリの署名を保存し、動的マネージャーとして信頼します</string>
-    <string name="dynamic_manager_set_failed">%s を動的マネージャーとして設定できませんでした</string>
-    <string name="dynamic_manager_del_failed">動的マネージャーから %s を削除できませんでした</string>
-    <string name="dynamic_manager_signature_unavailable">%s の動的マネージャー署名を取得できませんでした</string>
-    <string name="allow_any_dynamic_manager">任意のアプリを動的マネージャーとして許可</string>
-    <string name="allow_any_dynamic_manager_summary">実験的機能。あらかじめ定義されたマネージャー署名だけでなく、すべてのアプリに動的マネージャーのスイッチを表示します。</string>
-    <string name="dynamic_manager_badge">DYNAMIC KSU</string>
-    <string name="dynamic_manager_preset_badge">KSU</string>
     <string name="require_manager_version">マネージャーの更新が必要です。</string>
     <string name="metric_unavailable">利用不可</string>
     <string name="require_kernel_version">カーネルの更新が必要です。タップしてインストールします。</string>

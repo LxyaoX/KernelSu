@@ -35,8 +35,6 @@ FinaSU 与其他 Root 组件共享 `/data/adb`。这里的目录包含授权、�
 │   └── <plugin-id>/
 └── ksu/
     ├── .allowlist               # 内核 Root 授权与 App Profile
-    ├── .dynamic_manager         # ksud 维护的动态管理器 JSON
-    ├── dynamic_manager          # 内核持久化的动态管理器快照
     ├── .ksurc                   # ksud 运行配置
     ├── bin/
     │   └── ksud -> /data/adb/ksud
@@ -75,17 +73,6 @@ FinaSU 与其他 Root 组件共享 `/data/adb`。这里的目录包含授权、�
 | `/data/adb/ksu/.ksurc` | `ksud` 的运行配置。 | 不要用普通文本编辑器随意改写。 |
 
 ::::
-
-## 动态管理器文件
-
-动态管理器有两份不同用途的持久状态：
-
-| 路径 | 维护者 | 内容 |
-| --- | --- | --- |
-| `/data/adb/ksu/.dynamic_manager` | `ksud` | JSON 格式的签名列表与已授权 UID。 |
-| `/data/adb/ksu/dynamic_manager` | 内核 | 启动时恢复信任表所需的二进制快照。 |
-
-两者不是可以互换的普通配置文件。修改任意一份都可能导致管理器身份、授权列表或启动恢复不一致。需要切换管理器时使用[动态管理器](/manager/dynamic-manager/)页面。
 
 ## 普通模块
 
@@ -207,7 +194,6 @@ FinaSU 与其他 Root 组件共享 `/data/adb`。这里的目录包含授权、�
 2. 需要手工复制时，停止相关写入并保留文件权限与 SELinux 上下文。
 3. 不要复制整个 `/data/adb` 覆盖另一台设备。
 4. 恢复前核对设备型号、系统版本、Root 部署方式与路径来源。
-5. 恢复后重新检查授权、模块、插件、动态管理器和挂载状态。
 
 :::
 
@@ -217,5 +203,4 @@ FinaSU 与其他 Root 组件共享 `/data/adb`。这里的目录包含授权、�
 - [模块管理](/manager/module/)：普通模块操作。
 - [Lua 插件](/manager/plugin/)：插件目录与生命周期。
 - [内核模块](/manager/kernel-module/)：`.ko` 状态与配置。
-- [动态管理器](/manager/dynamic-manager/)：两份动态管理器状态的用途。
 - [基础概念](/guide/information/)：模块系统与系统分区的背景知识。

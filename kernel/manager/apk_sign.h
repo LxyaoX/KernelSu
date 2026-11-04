@@ -6,10 +6,8 @@
 #define APK_SIGN_FLAG_TRUSTED 0x1
 
 struct apk_sign_match {
-    int index; /* matched table index, -1 for a dynamic/unmatched signature */
+    int index; /* matched table index, -1 for an unmatched signature */
     bool trusted; /* the signature is authorized to be a manager */
-    bool preset; /* a recognized known-manager signature that is not trusted */
-    bool dynamic; /* matched a user-added dynamic manager signature */
     u32 size; /* certificate size */
     char hash[65]; /* lowercase hex SHA-256 of the certificate */
     const char *name; /* human readable manager name, may be NULL */

@@ -116,7 +116,6 @@ The permission helpers are defined in `kernel/supercall/perm.c`:
 | Feature | `GET_FEATURE`, `SET_FEATURE` | query support state and toggle features |
 | Mount | `GET_WRAPPER_FD`, `MANAGE_MARK`, `ADD_TRY_UMOUNT`, `NUKE_EXT4_SYSFS` | file wrapping, marks and unmounting |
 | Diagnostics | `GET_SULOG_FD`, `LOOKUP_SYMBOLS` | SU log stream and kernel symbol resolution |
-| Dynamic Manager | `SET_DYNAMIC_MANAGERS`, `GET_DYNAMIC_MANAGERS`, `SET_DYNAMIC_MANAGER_GRANTS` | persist candidates and authorized UIDs |
 
 ::::
 
@@ -192,7 +191,7 @@ FolkSU
 
 ::: warning Do Not Bypass `perm.c`
 
-Reinventing UID checks inside a handler misses conditions such as `only_manager`, the SU session FD or dynamic manager authorization. Permission decisions belong in the dispatch layer.
+Reinventing UID checks inside a handler misses conditions such as `only_manager` or the SU session FD. Permission decisions belong in the dispatch layer.
 
 :::
 
@@ -231,10 +230,9 @@ Cover at least:
 - An older client accessing a new or extended struct.
 - The return value when an ioctl request has a wrong length.
 - The return value when a feature is unsupported, instead of a crash.
-- The Manager exiting, rebooting and changes in dynamic manager authorization state.
+- The Manager exiting and rebooting.
 
 ## Related Pages
 
 - [Built-In kernel integration](/en/developer/builtin-integration/): kernel builds and signature slots.
 - [App Profile](/en/manager/app-profile/): the user-facing effect of profile fields.
-- [Dynamic Manager](/en/manager/dynamic-manager/): candidate managers and the authorization model.

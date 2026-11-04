@@ -97,7 +97,6 @@ See [AGENTS.md](./AGENTS.md) for the per-component build and check commands.
 
 - [KernelSU](https://github.com/tiann/KernelSU) - upstream project
 - [YukiSU](https://github.com/Anatdx/YukiSU) - YukiZygisk kernel feature and userspace payload
-- [YukiSU](https://github.com/Anatdx/YukiSU) - dynamic manager reference
 - [BakaSU](https://github.com/Baka-SU/BakaSU) - AnyKernel3 flashing and smaller-feature reference
 - [Magisk](https://github.com/topjohnwu/Magisk) - `magiskpolicy` and module concepts
 - [SUSFS](https://gitlab.com/simonpunk/susfs4ksu) - kernel-level hiding

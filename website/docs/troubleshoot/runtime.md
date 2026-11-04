@@ -220,7 +220,6 @@ ls -l /data/adb/ksud /data/adb/ksu/log
     ├── nomount_runtime          # 本次 NoMount 结果
     ├── preinit_status           # 预初始化状态
     ├── .allowlist               # 授权和 Profile
-    └── .dynamic_manager         # 动态管理器登记
 ```
 
 这些文件用于诊断。直接编辑可能绕过事务、锁和一致性检查，也让管理器显示与内核实际状态不一致。

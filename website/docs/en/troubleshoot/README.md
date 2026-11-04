@@ -236,7 +236,7 @@ flowchart TD
 
 - [Device Won't Boot](/en/troubleshoot/bootloop/): separate boot chain faults from module faults.
 - [Device Compatibility](/en/troubleshoot/compatibility/): KMI, ABI, boot partitions and the build matrix.
-- [Manager Authentication Failure](/en/troubleshoot/manager-auth/): signature, dynamic Manager and UAPI.
+- [Manager Authentication Failure](/en/troubleshoot/manager-auth/): signature and UAPI.
 - [No Root Request Prompt](/en/troubleshoot/root-request/): requests, UIDs, Shell and Profiles.
 - [Driver Runtime Errors](/en/troubleshoot/runtime/): `ksud`, modules, built-in capabilities and run modes.
 - [Passing Detection](/en/troubleshoot/pass-detection/): keep the target app working instead of chasing all-green detectors.

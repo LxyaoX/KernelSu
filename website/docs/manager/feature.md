@@ -1,6 +1,6 @@
 ---
 title: 管理器总览
-description: 从用途定位超级用户、模块、插件、日志、备份与动态管理器
+description: 从用途定位超级用户、模块、插件、日志与备份
 createTime: 2026/10/24 00:00:00
 permalink: /manager/feature/
 copyright:
@@ -36,7 +36,6 @@ FinaSU 管理器负责显示状态、处理授权、安装模块与插件、执�
 | 用 Lua 写开机脚本或操作入口 | [Lua 插件](/manager/plugin/) | 插件是底部独立页面，不是普通模块。 |
 | 查看谁执行了 Root 命令 | [SU 日志](/manager/su-log/) | 从 **超级用户** 左上角的文档图标进入。 |
 | 保存授权、模块安装包或启动分区 | [备份与 WebDAV](/manager/backup/) | 设置中的“备份”提供具体配置和操作。 |
-| 让另一个管理器接管驱动 | [动态管理器](/manager/dynamic-manager/) | 需要先让目标应用显示动态管理器开关。 |
 | 查 `/data/adb` 下的目录 | [`/data/adb` 存储结构](/manager/storage/) | 用于诊断，不建议直接修改。 |
 | 改主题、语言、安全或内置能力 | [设置总览](/setting/overview/) | 这些选项不属于管理器板块的功能页。 |
 
@@ -173,7 +172,6 @@ flowchart TD
 | 导入 `.ko` | 只保存文件与配置 | 不会自动加载 |
 | 启用或禁用插件 | 自动回调的后续运行资格 | 不需要 |
 | 恢复启动分区 | 直接写入对应分区 | 需要完整重启 |
-| 切换动态管理器 | 内核信任与授权表 | 不需要，但可能触发身份与 Root 重探测 |
 
 ::::
 
@@ -202,9 +200,7 @@ flowchart TD
 
 管理器会通过 JNI 内核接口和受控的 Root Shell 调用 `ksud`。因此：
 
-- 不要给来源不明的 APK 授予动态管理器身份；
 - 不要从不可信仓库安装以 Root 执行的模块或插件；
-- 不要手工编辑授权、动态管理器或挂载状态文件；
 - 恢复分区、永久卸载和刷写操作前先准备与设备匹配的救砖镜像。
 
 ## 继续阅读
@@ -217,5 +213,4 @@ flowchart TD
 - [内核模块](/manager/kernel-module/)：`.ko` 导入、加载与安全模式。
 - [SU 日志](/manager/su-log/)：Root 事件与诊断。
 - [备份与 WebDAV](/manager/backup/)：保存和恢复。
-- [动态管理器](/manager/dynamic-manager/)：切换管理器身份。
 - [`/data/adb` 存储结构](/manager/storage/)：目录与文件的作用。

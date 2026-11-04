@@ -232,7 +232,7 @@ fn link_ksud_to_bin() -> Result<()> {
 
 /// Clear the `FS_IMMUTABLE_FL` inode flag on `path` if it is set.
 ///
-/// Some kernels mark `/data/adb/ksud` immutable while a dynamic manager is
+/// Some kernels mark `/data/adb/ksud` immutable while a manager session is
 /// active, which makes the `remove_file`/`copy` in [`install`] fail with
 /// `EPERM`. We run as root here, so dropping the flag is permitted and lets the
 /// daemon be replaced.

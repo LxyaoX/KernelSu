@@ -116,7 +116,6 @@ flowchart TD
 | Feature | `GET_FEATURE`、`SET_FEATURE` | 查询支持状态与切换功能 |
 | 挂载 | `GET_WRAPPER_FD`、`MANAGE_MARK`、`ADD_TRY_UMOUNT`、`NUKE_EXT4_SYSFS` | 文件包装、标记与卸载 |
 | 诊断 | `GET_SULOG_FD`、`LOOKUP_SYMBOLS` | SU 日志流与内核符号解析 |
-| 动态管理器 | `SET_DYNAMIC_MANAGERS`、`GET_DYNAMIC_MANAGERS`、`SET_DYNAMIC_MANAGER_GRANTS` | 持久化候选与授权 UID |
 
 ::::
 
@@ -192,7 +191,7 @@ FolkSU
 
 ::: warning 不要绕过 `perm.c`
 
-在 handler 中重新发明 UID 检查会遗漏 `only_manager`、SU 会话 FD 或动态管理器授权等条件。权限结论应在分发层集中处理。
+在 handler 中重新发明 UID 检查会遗漏 `only_manager`、SU 会话 FD 等条件。权限结论应在分发层集中处理。
 
 :::
 
@@ -231,10 +230,9 @@ adb logcat -b kernel | grep -i ksu
 - 旧版客户端访问新增或扩展结构体。
 - ioctl 请求长度错误的返回。
 - feature 不支持时的返回，而非直接崩溃。
-- 管理器退出、重启和动态管理器授权状态变化。
+- 管理器退出与重启。
 
 ## 相关页面
 
 - [Built-In 内核集成](/developer/builtin-integration/)：内核构建和签名槽位。
 - [App Profile](/manager/app-profile/)：Profile 字段的用户侧效果。
-- [动态管理器](/manager/dynamic-manager/)：候选管理器与授权模型。

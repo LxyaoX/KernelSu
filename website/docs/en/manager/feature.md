@@ -1,6 +1,6 @@
 ---
 title: Manager Overview
-description: Locate superuser, modules, plugins, logs, backup, and the Dynamic Manager by what you want to do
+description: Locate superuser, modules, plugins, logs and backup by what you want to do
 createTime: 2026/10/24 00:00:00
 permalink: /en/manager/feature/
 copyright:
@@ -36,7 +36,6 @@ Start with the table below. The Manager does not squeeze every feature into the 
 | Write boot scripts or action handlers in Lua | [Lua Plugins](/en/manager/plugin/) | Plugins are a separate tab at the bottom, not regular modules. |
 | See who ran Root commands | [SU Logs](/en/manager/su-log/) | Reached from the document icon at the top left of **Superuser**. |
 | Save authorizations, module installers, or boot partitions | [Backup & WebDAV](/en/manager/backup/) | Backup in Settings holds the actual configuration and actions. |
-| Let another manager take over the driver | [Dynamic Manager](/en/manager/dynamic-manager/) | The target app must expose the Dynamic Manager switch first. |
 | Look up directories under `/data/adb` | [`/data/adb` Storage Layout](/en/manager/storage/) | For diagnostics. Editing these files directly is not recommended. |
 | Change theme, language, security, or built-in capabilities | [Settings Overview](/en/setting/overview/) | These options are not part of the Manager section. |
 
@@ -173,7 +172,6 @@ The info card usually shows the Manager version, kernel version, device model, S
 | Import a `.ko` | Saves the file and configuration only | Does not load it automatically |
 | Enable or disable a plugin | Whether automatic callbacks may run later | No |
 | Restore a boot partition | Writes directly to that partition | Requires a full reboot |
-| Switch the Dynamic Manager | Kernel trust and authorization tables | No, but identity and Root may be probed again |
 
 ::::
 
@@ -202,9 +200,7 @@ flowchart TD
 
 The Manager calls `ksud` through the JNI kernel interface and a controlled Root Shell. Because of that:
 
-- do not grant Dynamic Manager identity to an APK of unknown origin;
 - do not install modules or plugins that run as Root from untrusted repositories;
-- do not hand-edit authorization, Dynamic Manager, or mount state files;
 - before restoring partitions, uninstalling permanently, or flashing, prepare a rescue image that matches the device.
 
 ## Continue Reading
@@ -217,5 +213,4 @@ The Manager calls `ksud` through the JNI kernel interface and a controlled Root 
 - [Kernel Modules](/en/manager/kernel-module/): `.ko` import, loading, and Safe Mode.
 - [SU Logs](/en/manager/su-log/): Root events and diagnostics.
 - [Backup & WebDAV](/en/manager/backup/): saving and restoring.
-- [Dynamic Manager](/en/manager/dynamic-manager/): switching manager identity.
 - [`/data/adb` Storage Layout](/en/manager/storage/): what each directory and file does.

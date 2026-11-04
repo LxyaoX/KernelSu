@@ -28,7 +28,6 @@ import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.data.modulestore.VerifiedDownloads
 import me.weishu.kernelsu.data.modulestore.copyForInstall
 import okhttp3.OkHttpClient
-import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -45,143 +44,11 @@ private fun getKsuDaemonPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud.so"
 }
 
-/**
- * Adds the granted bit when the kernel cannot know about it.
- *
- * A kernel without the authorized-appid list treats every trusted signature as a
- * dynamic manager, so the UI has to read the trusted bit there. With the list, a
- * trusted signature only means "recognized" and the granted bit decides.
- */
-fun normalizeDynamicManagerFlags(flags: Int): Int {
-    if (KsuCli.dynamicManagerGrantsSupported()) {
-        return flags
-    }
-    return if (flags and Natives.DYNAMIC_MANAGER_FLAG_TRUSTED != 0) {
-        flags or Natives.DYNAMIC_MANAGER_FLAG_GRANTED
-    } else {
-        flags
-    }
-}
-
 data class FlashResult(val code: Int, val err: String, val showReboot: Boolean) {
     constructor(result: Shell.Result, showReboot: Boolean) : this(result.code, result.err.joinToString("\n"), showReboot)
     constructor(result: Shell.Result) : this(result, result.isSuccess)
 }
 
-object KsuCli {
-
-    /** A dynamic-manager certificate as reported by `ksud dynamic get-sign --json`. */
-    data class DynamicManagerSignature(
-        val size: String,
-        val hash: String,
-    )
-
-    /** Flags for the app owning [uid], or 0 when it is not a tracked candidate. */
-    fun getDynamicManagerFlagsForUid(uid: Int): Int {
-        val items = runCatching { Natives.getDynamicManagers() }.getOrDefault(IntArray(0))
-        val appId = uid % 100000
-        var index = 0
-        while (index + 1 < items.size) {
-            if (items[index] == appId) {
-                return normalizeDynamicManagerFlags(items[index + 1])
-            }
-            index += 2
-        }
-        return 0
-    }
-
-    /**
-     * Whether the kernel honours an authorized-appid list. Without it, sharing a
-     * registered certificate is enough and the trusted bit is the manager badge.
-     * The answer cannot change while the process lives, so probe it once.
-     */
-    private val grantsSupported: Boolean by lazy {
-        runCatching { Natives.isDynamicManagerGrantsEnabled() }.getOrDefault(false)
-    }
-
-    fun dynamicManagerGrantsSupported(): Boolean = grantsSupported
-
-    suspend fun getDynamicManagerSignatureForUid(uid: Int): DynamicManagerSignature? =
-        withContext(Dispatchers.IO) {
-            if (!CapabilityRepository.currentPrivileged()) {
-                Log.w(TAG, "refusing dynamic get-sign: no manager identity or ready root")
-                return@withContext null
-            }
-            val stdout = ArrayList<String>()
-            val stderr = ArrayList<String>()
-            val result = awaitRootShell().newJob()
-                .add("${getKsuDaemonPath()} dynamic get-sign --json --uid $uid")
-                .to(stdout, stderr)
-                .exec()
-            if (!result.isSuccess) {
-                Log.w(TAG, "dynamic get-sign --uid $uid failed: ${stderr.joinToString("\n")}")
-                return@withContext null
-            }
-
-            runCatching {
-                val v2 = JSONObject(stdout.joinToString("\n")).getJSONObject("v2")
-                if (!v2.optBoolean("has", false)) return@runCatching null
-                val size = v2.optString("size").takeIf { it.isNotBlank() } ?: return@runCatching null
-                val hash = v2.optString("hash").takeIf { it.isNotBlank() } ?: return@runCatching null
-                DynamicManagerSignature(size, hash)
-            }.getOrElse {
-                Log.w(TAG, "Failed to parse dynamic manager signature for uid $uid", it)
-                null
-            }
-        }
-
-    suspend fun setDynamicManagerUid(uid: Int): Boolean = withContext(Dispatchers.IO) {
-        // A revocation must be respected: never run a new privileged task on a stale identity.
-        if (!CapabilityRepository.currentPrivileged()) {
-            Log.w(TAG, "refusing dynamic set-uid $uid: no manager identity or ready root")
-            return@withContext false
-        }
-        val result = awaitRootShell().newJob()
-            .add("${getKsuDaemonPath()} dynamic set-uid $uid")
-            .exec()
-        Log.i(TAG, "dynamic set-uid $uid result: ${result.isSuccess}")
-        result.isSuccess
-    }
-
-    /** Authorize an appid that is already registered, without touching its signature. */
-    suspend fun grantDynamicManagerUid(uid: Int): Boolean = withContext(Dispatchers.IO) {
-        if (!CapabilityRepository.currentPrivileged()) {
-            Log.w(TAG, "refusing dynamic grant $uid: no manager identity or ready root")
-            return@withContext false
-        }
-        val result = awaitRootShell().newJob()
-            .add("${getKsuDaemonPath()} dynamic grant $uid")
-            .exec()
-        Log.i(TAG, "dynamic grant $uid result: ${result.isSuccess}")
-        result.isSuccess
-    }
-
-    /** Revoke an appid: it stays recognized, it just stops being a manager. */
-    suspend fun ungrantDynamicManagerUid(uid: Int): Boolean = withContext(Dispatchers.IO) {
-        if (!CapabilityRepository.currentPrivileged()) {
-            Log.w(TAG, "refusing dynamic ungrant $uid: no manager identity or ready root")
-            return@withContext false
-        }
-        val result = awaitRootShell().newJob()
-            .add("${getKsuDaemonPath()} dynamic ungrant $uid")
-            .exec()
-        Log.i(TAG, "dynamic ungrant $uid result: ${result.isSuccess}")
-        result.isSuccess
-    }
-
-    suspend fun deleteDynamicManager(signature: DynamicManagerSignature): Boolean =
-        withContext(Dispatchers.IO) {
-            if (!CapabilityRepository.currentPrivileged()) {
-                Log.w(TAG, "refusing dynamic del: no manager identity or ready root")
-                return@withContext false
-            }
-            val result = awaitRootShell().newJob()
-                .add("${getKsuDaemonPath()} dynamic del ${signature.size} ${signature.hash}")
-                .exec()
-            Log.i(TAG, "dynamic del ${signature.size} ${signature.hash} result: ${result.isSuccess}")
-            result.isSuccess
-        }
-}
 
 fun getRootShell(globalMnt: Boolean = false): Shell {
     return RootShell.obtain(globalMnt)

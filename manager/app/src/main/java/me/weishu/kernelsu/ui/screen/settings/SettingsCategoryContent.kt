@@ -348,23 +348,6 @@ fun FunctionCategoryContent(uiState: SettingsUiState, actions: SettingsScreenAct
             )
         )
 
-        // §6.1: hide the dynamic-manager toggle entirely when the kernel cannot support it, instead
-        // of offering a switch that does nothing.
-        if (uiState.isDynamicManagerAvailable) {
-            SegmentedColumn(
-                modifier = GroupModifier,
-                content = listOf {
-                    SwitchPreference(
-                        title = stringResource(id = R.string.allow_any_dynamic_manager),
-                        summary = stringResource(id = R.string.allow_any_dynamic_manager_summary),
-                        startAction = { Icon(Icons.Filled.AdminPanelSettings, contentDescription = null) },
-                        checked = uiState.allowAnyDynamicManager,
-                        onCheckedChange = actions.onSetAllowAnyDynamicManager,
-                    )
-                }
-            )
-        }
-
         SegmentedColumn(
             modifier = GroupModifier,
             content = listOf(

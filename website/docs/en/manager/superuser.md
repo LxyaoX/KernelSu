@@ -30,8 +30,6 @@ Each row may be one app or several apps that share one UID. The Manager itself n
 
 | Badge | Meaning |
 | --- | --- |
-| `DYNAMIC KSU` | This UID has been granted Dynamic Manager identity and can manage the current driver. |
-| `KSU` | A preset manager signature was recognized, but Dynamic Manager authorization has not been granted. |
 | `ROOT` | The Root profile for this UID allows Root. |
 | `UMOUNT` | The non-Root policy for this UID hides files injected by modules. |
 | `CUSTOM` | The app does not use the default profile for that state, but a template or custom configuration. |
@@ -96,7 +94,7 @@ The sort menu at the top right supports:
 | Install time | To find apps added to the device recently |
 | Update time | To find apps upgraded recently that may behave differently |
 
-"Reverse" flips the current sort direction. The Manager still places dynamic managers, preset managers, authorized apps, and apps with custom policy nearer the top, so the sort field mainly orders entries inside those status groups.
+"Reverse" flips the current sort direction. The Manager still places authorized apps and apps with custom policy nearer the top, so the sort field mainly orders entries inside those status groups.
 
 ## Granting, Denying, and Revoking
 
@@ -165,5 +163,4 @@ Common causes:
 
 - [App Profile](/en/manager/app-profile/): configure permissions and file visibility per UID.
 - [SU Logs](/en/manager/su-log/): confirm requests, execution, and authorization events.
-- [Dynamic Manager](/en/manager/dynamic-manager/): grant or revoke manager identity.
 - [Backup & WebDAV](/en/manager/backup/): save and restore the authorization list.

@@ -589,7 +589,6 @@ GhostLock 需要与设备内核精确匹配的 profile，不能只凭 Android �
 ├── ksud                      # 用户态命令行工具，切换时会被替换
 ├── ksu/
 │   ├── .allowlist            # 授权状态
-│   ├── .dynamic_manager      # 管理器登记
 │   └── profile/              # App Profile
 └── modules/                  # 已安装模块
 ```
@@ -598,7 +597,7 @@ KernelSU 与 FinaSU 可能使用相同路径，所以数据看起来“还在”
 
 - 重新检查授权应用和默认策略。
 - 先停用旧管理器专用模块，再逐个启用。
-- 不手工编辑 `.allowlist` 或 `.dynamic_manager`。
+- 不手工编辑 `.allowlist`。
 - 不把旧管理器的 APK、`ksud` 或 `kernelsu.ko` 复制进 FinaSU 的目录。
 
 ::: warning 模块兼容性

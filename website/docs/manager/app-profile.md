@@ -1,6 +1,6 @@
 ---
 title: App Profile
-description: 按 UID 配置 Root、非 Root、模板、权限、SELinux 与动态管理器
+description: 按 UID 配置 Root、非 Root、模板、权限与 SELinux
 createTime: 2026/10/24 00:00:00
 permalink: /manager/app-profile/
 copyright:
@@ -140,25 +140,6 @@ Root 进程使用的主组 ID。默认值为 `0`。错误的 GID 可能让文件
 
 完整字段说明见 [App Profile 模板](/setting/profile-template/)。
 
-## 动态管理器
-
-动态管理器开关只在以下条件同时满足时出现：
-
-- 当前内核支持动态管理器；
-- 当前条目不是特殊 UID；
-- 应用是预置管理器、已经被授权，或设置中启用了实验性的“允许任意应用成为动态管理器”。
-
-打开开关时，管理器会提取目标 APK 的签名证书大小和 SHA-256，把签名登记到内核，并授权这个 UID。关闭时：
-
-- 支持应用 ID 授权表的新内核只撤销该 UID 的管理权限，保留已登记签名；
-- 旧内核没有独立撤销能力时，会删除整个签名登记。
-
-::: danger 动态管理器权限很高
-
-动态管理器能够管理内核 Root。不要因为“包名看起来一样”就授权；升级、重新签名或换用不同构建后都必须重新核对。详见[动态管理器](/manager/dynamic-manager/)。
-
-:::
-
 ## 共享 UID
 
 多个包可能共享一个 UID。详情页会显示“影响以下应用”，列出所有受影响条目。
@@ -210,5 +191,4 @@ Root 进程使用的主组 ID。默认值为 `0`。错误的 GID 可能让文件
 
 - [超级用户](/manager/superuser/)：查找应用、UID 分组与授权状态。
 - [App Profile 模板](/setting/profile-template/)：预设、自定义模板与导入导出。
-- [动态管理器](/manager/dynamic-manager/)：管理器信任与撤销差异。
 - [SU 日志](/manager/su-log/)：确认实际请求与执行结果。

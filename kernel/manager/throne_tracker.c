@@ -13,7 +13,6 @@
 #include "policy/allowlist.h"
 #include "manager/apk_sign.h"
 #include "klog.h" // IWYU pragma: keep
-#include "manager/dynamic_manager.h"
 #include "manager/manager_identity.h"
 #include "manager/throne_tracker.h"
 
@@ -48,29 +47,6 @@ static void crown_manager(const char *apk, struct list_head *uid_data)
         }
     }
 }
-
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-static void note_candidate_manager(const char *apk, struct list_head *uid_data, const struct apk_sign_match *match)
-{
-    char pkg[KSU_MAX_PACKAGE_NAME];
-    if (get_pkg_from_apk_path(pkg, apk) < 0) {
-        pr_err("Failed to get package name from apk path: %s\n", apk);
-        return;
-    }
-
-    struct list_head *list = (struct list_head *)uid_data;
-    struct uid_data *np;
-
-    list_for_each_entry (np, list, list) {
-        if (strncmp(np->package, pkg, KSU_MAX_PACKAGE_NAME) == 0) {
-            pr_info("Noting dynamic manager candidate: %s(uid=%d), name=%s\n", pkg, np->uid,
-                    match->name ? match->name : "unknown");
-            ksu_dynamic_manager_note_scanned(np->uid, match);
-            break;
-        }
-    }
-}
-#endif // CONFIG_KSU_DYNAMIC_MANAGER
 
 #define DATA_PATH_LEN 384 // 384 is enough for /data/app/<package>/base.apk
 
@@ -258,8 +234,8 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
              * Score the collected apk only after iterate_dir() returned and the
              * directory file has been closed. match_apk_signature() opens the
              * apk, which must not happen while the readdir callback still holds
-             * the directory lock. Keep the existing cache and dynamic-manager
-             * semantics, and keep scanning so other candidates are still found.
+             * the directory lock. Keep the existing cache semantics, and keep
+             * scanning so other candidates are still found.
              */
             if (candidate_path[0]) {
                 struct apk_path_hash *cpos, *cn;
@@ -289,10 +265,6 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
                             kfree(cpos);
                         }
                     } else {
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-                        if (matched)
-                            note_candidate_manager(candidate_path, uid_data, &match);
-#endif // CONFIG_KSU_DYNAMIC_MANAGER
                         struct apk_path_hash *apk_data = kzalloc(sizeof(struct apk_path_hash), GFP_KERNEL);
                         if (!apk_data) {
                             pr_err("Failed to allocate apk_path_hash for %s\n", candidate_path);

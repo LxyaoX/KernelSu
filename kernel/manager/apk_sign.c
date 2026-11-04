@@ -16,7 +16,6 @@
 #endif
 
 #include "manager/apk_sign.h"
-#include "manager/dynamic_manager.h"
 #include "uapi/app_profile.h"
 #include "klog.h" // IWYU pragma: keep
 
@@ -27,11 +26,10 @@ typedef struct {
     const char *name;
 } apk_sign_key_t;
 
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
 /*
- * Only FinaSU's own release key is trusted by default. Every third-party
- * manager below is recognized but never auto-authorized: the user has to opt
- * each candidate in through the dynamic manager interface.
+ * One trusted manager key. A release build passes FinaSU's own certificate
+ * through FINASU_TRUSTED_*; a build that passes nothing keeps the KernelSU slot,
+ * which is what a PR build (signed with a throwaway key) ends up with.
  */
 #ifndef FINASU_TRUSTED_SIZE
 #define FINASU_TRUSTED_SIZE EXPECTED_SIZE
@@ -40,47 +38,9 @@ typedef struct {
 #define FINASU_TRUSTED_HASH EXPECTED_HASH
 #endif
 
-/* Bit i selects the i-th preset row (0xff keeps all of them). */
-#ifndef KSU_PRESET_MANAGER_MASK
-#define KSU_PRESET_MANAGER_MASK 0xff
-#endif
-
 static apk_sign_key_t apk_sign_keys[] = {
     { FINASU_TRUSTED_SIZE, FINASU_TRUSTED_HASH, APK_SIGN_FLAG_TRUSTED, "FinaSU" },
-#if (KSU_PRESET_MANAGER_MASK & 0x01)
-    { 0x033b, "c371061b19d8c7d7d6133c6a9bafe198fa944e50c1b31c9d8daa8d7f1fc2d2d6", 0, "KernelSU" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x02)
-    { 0x375, "484fcba6e6c43b1fb09700633bf2fb4758f13cb0b2f4457b80d075084b26c588", 0, "KowSU" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x04)
-    { 0x3e6, "79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7", 0, "KernelSU-Next" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x08)
-    { 0x377, "d3469712b6214462764a1d8d3e5cbe1d6819a0b629791b9f4101867821f1df64", 0, "ReSukiSU" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x10)
-    { 0x35c, "947ae944f3de4ed4c21a7e4f7953ecf351bfa2b36239da37a34111ad29993eef", 0, "SukiSU" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x20)
-    { 0x180, "7e0c6d7278a3bb8e364e0fcba95afaf3666cf5ff3c245a3b63c8833bd0445cc4", 0, "MKSU" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x40)
-    { 0x396, "f415f4ed9435427e1fdf7f1fccd4dbc07b3d6b8751e4dbcec6f19671f427870b", 0, "RKSU" },
-#endif
-#if (KSU_PRESET_MANAGER_MASK & 0x80)
-    { 0x363, "4359c171f32543394cbc23ef908c4bb94cad7c8087002ba164c8230948c21549", 0, "xxKSU" },
-#endif
 };
-#else
-/* Dynamic manager disabled: preserve the classic two fixed trusted slots. */
-static apk_sign_key_t apk_sign_keys[] = {
-    { EXPECTED_SIZE, EXPECTED_HASH, APK_SIGN_FLAG_TRUSTED, "KernelSU" },
-#ifdef EXPECTED_SIZE2
-    { EXPECTED_SIZE2, EXPECTED_HASH2, APK_SIGN_FLAG_TRUSTED, "FinaSU" },
-#endif
-};
-#endif
 
 struct sdesc {
     struct shash_desc shash;
@@ -205,29 +165,12 @@ static bool check_block(struct file *fp, loff_t *pos, loff_t block_end, struct a
         if (match) {
             match->index = i;
             match->trusted = (key.flags & APK_SIGN_FLAG_TRUSTED) != 0;
-            match->preset = !match->trusted;
-            match->dynamic = false;
             match->size = certificate_size;
             match->name = key.name;
             strscpy(match->hash, hash_str, sizeof(match->hash));
         }
         return true;
     }
-
-#ifdef CONFIG_KSU_DYNAMIC_MANAGER
-    if (ksu_dynamic_manager_is_trusted_sign(certificate_size, hash_str)) {
-        if (match) {
-            match->index = -1;
-            match->trusted = true;
-            match->preset = false;
-            match->dynamic = true;
-            match->size = certificate_size;
-            match->name = "dynamic";
-            strscpy(match->hash, hash_str, sizeof(match->hash));
-        }
-        return true;
-    }
-#endif
 
     return false;
 }
@@ -431,8 +374,6 @@ bool match_apk_signature(char *path, struct apk_sign_match *match)
     if (match) {
         match->index = -1;
         match->trusted = false;
-        match->preset = false;
-        match->dynamic = false;
         match->size = 0;
         match->name = NULL;
         match->hash[0] = '\0';

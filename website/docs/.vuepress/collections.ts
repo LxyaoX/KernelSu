@@ -249,11 +249,6 @@ export const docsSidebar: ThemeSidebarItem[] = [
             icon: 'ri:user-settings-line',
             badge: { text: '进阶', type: 'info' },
           },
-          {
-            text: '动态管理器',
-            link: '/manager/dynamic-manager/',
-            icon: 'ri:shield-keyhole-line',
-            badge: { text: '进阶', type: 'info' },
           },
         ],
       },
@@ -750,11 +745,6 @@ export const enDocsSidebar: ThemeSidebarItem[] = [
             icon: 'ri:user-settings-line',
             badge: { text: 'Advanced', type: 'info' },
           },
-          {
-            text: 'Dynamic Manager',
-            link: '/en/manager/dynamic-manager/',
-            icon: 'ri:shield-keyhole-line',
-            badge: { text: 'Advanced', type: 'info' },
           },
         ],
       },

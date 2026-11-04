@@ -11,7 +11,7 @@ pub enum FeatureId {
     Sulog = 2,
     AdbRoot = 3,
     SelinuxHide = 4,
-    // ID 5 is the read-only dynamic-manager capability, not a toggle.
+    // IDs 5 and 8 belonged to the removed dynamic-manager feature.
     AvcSpoof = 6,
     ShellSuAdbOnly = 7,
     MountViewFilter = 10,
@@ -116,6 +116,6 @@ mod tests {
         assert_eq!(FeatureId::from_u32(10), Some(FeatureId::MountViewFilter));
         assert!(!FeatureId::KernelUmount.has_dedicated_manager());
         assert!(parse_feature_id("5").is_err());
-        assert!(parse_feature_id("dynamic_manager").is_err());
+        assert!(parse_feature_id("unknown_feature").is_err());
     }
 }

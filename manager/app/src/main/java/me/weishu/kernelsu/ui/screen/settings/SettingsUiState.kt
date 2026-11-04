@@ -87,8 +87,6 @@ data class SettingsUiState(
     val useSoftReboot: Boolean = false,
 
     // Dynamic Manager
-    val allowAnyDynamicManager: Boolean = false,
-    val isDynamicManagerAvailable: Boolean = true
 )
 
 @Immutable
@@ -123,7 +121,6 @@ data class SettingsScreenActions(
     val onSetModuleDescriptionMaxLines: (Int) -> Unit,
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
-    val onSetAllowAnyDynamicManager: (Boolean) -> Unit,
     val onOpenCategory: (String) -> Unit,
     val onOpenAbout: () -> Unit,
 )

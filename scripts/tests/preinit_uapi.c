@@ -21,6 +21,5 @@ _Static_assert(sizeof(struct ksu_get_info_legacy_cmd) == 12,
 int main(void) {
   return KERNEL_SU_UAPI_VERSION != 6 ||
          KSU_GET_INFO_FLAG_PREINIT != (1U << 5) ||
-         KSU_IOCTL_LOOKUP_SYMBOLS != 0x40184b16 ||
-         KSU_IOCTL_LOOKUP_SYMBOLS == KSU_IOCTL_SET_DYNAMIC_MANAGERS;
+         KSU_IOCTL_LOOKUP_SYMBOLS != 0x40184b16;
 }

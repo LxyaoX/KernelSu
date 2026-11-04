@@ -89,18 +89,6 @@ Records Root execution, legacy SU, authorization and log events. After you turn 
 
 For viewing and filtering, see [SU Log](/en/manager/su-log/).
 
-### Allow Any App to Become Dynamic Manager
-
-This is an experimental feature. By default, only a manager with a preset signature can see "Set as dynamic manager" in the app UI; when this is on, any app may show that entry.
-
-::: danger This widens the trust boundary
-
-Do not set unknown apps as dynamic manager just to try it. The entry is hidden completely when the current kernel does not support it.
-
-:::
-
-For the dynamic manager flow, see [Dynamic Manager](/en/manager/dynamic-manager/).
-
 ## YukiZygisk
 
 YukiZygisk is the Zygisk engine that ships with FinaSU. Injection happens in the kernel; `ksud` installs the payload, starts the daemons at boot, and writes the settings into `yzconfig.json`.
@@ -207,4 +195,3 @@ No. Installed modules are not deleted. It only stops injecting module content du
 - [Sui Guide](/en/builtin/sui/)
 - [SUSFS](/en/builtin/susfs/)
 - [SU Log](/en/manager/su-log/)
-- [Dynamic Manager](/en/manager/dynamic-manager/)

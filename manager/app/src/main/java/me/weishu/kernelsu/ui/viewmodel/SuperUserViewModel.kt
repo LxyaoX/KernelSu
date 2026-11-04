@@ -302,18 +302,15 @@ class SuperUserViewModel(
                 anyCustom = sorted.any { it.hasCustomProfile },
                 shouldUmount = shouldUmount,
                 ownerName = ownerName,
-                dynamicManagerFlags = sorted.maxOfOrNull { it.dynamicManagerFlags } ?: 0,
             )
         }
     }
 
     private fun groupRank(group: GroupedApps): Int = when {
-        group.isDynamicManager -> 0
-        group.isPresetManager -> 1
-        group.anyAllowSu -> 2
-        group.anyCustom -> 3
-        group.apps.size > 1 -> 4
-        else -> 5
+        group.anyAllowSu -> 0
+        group.anyCustom -> 1
+        group.apps.size > 1 -> 2
+        else -> 3
     }
 
     private fun sortGroups(groups: List<GroupedApps>, config: AppSortConfig): List<GroupedApps> {

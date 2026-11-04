@@ -16,12 +16,6 @@ pub fn on_post_fs_data() -> Result<()> {
 
     ksucalls::report_post_fs_data();
 
-    // Restore user-claimed dynamic-manager signatures. The kernel table is
-    // volatile, so replay the persisted list on every boot; it is idempotent.
-    if let Err(e) = crate::dynamic_manager::load_and_apply() {
-        warn!("apply dynamic manager signatures failed: {e}");
-    }
-
     utils::umask(0);
 
     // Clear all temporary module configs early
@@ -258,12 +252,6 @@ pub fn on_boot_completed() {
     ksucalls::report_boot_complete();
     info!("on_boot_completed triggered!");
     crate::preinit::on_boot_completed();
-    // A post-fs-data migration may have had nothing to adopt yet (the package
-    // scan had not produced anything); by now it certainly has.
-    if let Err(e) = crate::dynamic_manager::finish_migration() {
-        warn!("finish dynamic manager migration failed: {e:#}");
-    }
-
     // The payload's late property work runs from here rather than from `service`: this is the
     // stage where `sys.boot_completed` is already 1, which is what upstream's script waits for.
     if let Err(e) = crate::pif::run_stage("service", ScriptWait::NoWait) {

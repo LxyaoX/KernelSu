@@ -88,18 +88,6 @@ flowchart TD
 
 查看与筛选方法见 [SU 日志](/manager/su-log/)。
 
-### 允许任意应用成为动态管理器
-
-这是实验功能。默认只有预置签名的管理器能在应用界面中看到“设为动态管理器”；开启后，任意应用都可能出现该入口。
-
-::: danger 这会扩大信任范围
-
-不要为了尝试而随意把未知应用设为动态管理器。该入口在当前内核不支持时会完全隐藏。
-
-:::
-
-动态管理器流程见 [动态管理器](/manager/dynamic-manager/)。
-
 ## YukiZygisk
 
 YukiZygisk 是随 FinaSU 提供的 Zygisk 引擎。注入由内核完成，`ksud` 负责安装载荷、在开机时拉起守护进程，并把设置写进 `yzconfig.json`。
@@ -206,4 +194,3 @@ NoMount 初始没有例外应用。需要隐藏时，在“NoMount → 例外应
 - [Sui 使用指南](/builtin/sui/)
 - [SUSFS](/builtin/susfs/)
 - [SU 日志](/manager/su-log/)
-- [动态管理器](/manager/dynamic-manager/)

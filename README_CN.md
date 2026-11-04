@@ -95,7 +95,6 @@ TEESimulator 为选定的应用回应密钥认证请求：它把 AOSP 的参考 
 
 - [KernelSU](https://github.com/tiann/KernelSU)：上游项目
 - [YukiSU](https://github.com/Anatdx/YukiSU)：YukiZygisk 的内核特性与用户态载荷
-- [YukiSU](https://github.com/Anatdx/YukiSU)：动态管理器参考
 - [BakaSU](https://github.com/Baka-SU/BakaSU)：AnyKernel3 刷写及部分小功能参考
 - [Magisk](https://github.com/topjohnwu/Magisk)：`magiskpolicy` 与模块概念
 - [SUSFS](https://gitlab.com/simonpunk/susfs4ksu)：内核级隐藏

@@ -19,7 +19,6 @@ static const char *const feature_names[KSU_FEATURE_MAX] = {
     [KSU_FEATURE_SELINUX_HIDE] = "selinux_hide",
     [KSU_FEATURE_AVC_SPOOF] = "avc_spoof",
     [KSU_FEATURE_SHELL_SU_ADB_ONLY] = "shell_su_adb_only",
-    [KSU_FEATURE_DYNAMIC_MANAGER_GRANTS] = "dynamic_manager_grants",
     [KSU_FEATURE_MOUNT_VIEW_FILTER] = "mount_view_filter",
 };
 
