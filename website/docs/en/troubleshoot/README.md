@@ -52,7 +52,7 @@ The order between layers cannot be reversed freely. For example, if Sui does not
 | --- | --- | --- |
 | No boot after flashing, boot animation loop, Recovery available or not | Whether the fault is in the boot chain or in the module stage | [Device Won't Boot](/en/troubleshoot/bootloop/) |
 | The Manager shows "not installed", "not supported", or no driver version | Whether device conditions, KMI, ABI, partitions and build match | [Device Compatibility](/en/troubleshoot/compatibility/) |
-| The Manager opens, but reading or writing authorization, modules or version fails | Manager signature, dynamic Manager identity, or UAPI | [Manager Authentication Failure](/en/troubleshoot/manager-auth/) |
+| The Manager opens, but reading or writing authorization, modules or version fails | Manager signature or UAPI | [Manager Authentication Failure](/en/troubleshoot/manager-auth/) |
 | An app requests Root but gets no grant, or still reports no Root | Whether the request arrived, whether the UID matches, whether the Shell origin is restricted | [No Root Request Prompt](/en/troubleshoot/root-request/) |
 | The driver is "connected" but `ksud`, modules or built-in capabilities misbehave | User-space service, run mode, or dependency chain | [Driver Runtime Errors](/en/troubleshoot/runtime/) |
 | Modules or Zygisk are visible to other apps but not to the target app | App Profile, mount filtering, NoMount exceptions, or SELinux | [Detection & Hiding](/en/troubleshoot/detection/) |
@@ -193,7 +193,7 @@ These commands record facts. Do not call internal ioctls directly, load `.ko` fi
 
 ### Clearing `/data/adb` first
 
-This deletes modules, authorization, Profiles, dynamic Manager registrations and logs. The symptom may disappear, but the cause is deleted with it. Unless a maintainer explicitly asks and you have a backup, do not do this.
+This deletes modules, authorization, Profiles and logs. The symptom may disappear, but the cause is deleted with it. Unless a maintainer explicitly asks and you have a backup, do not do this.
 
 ### Disabling all hiding at once
 

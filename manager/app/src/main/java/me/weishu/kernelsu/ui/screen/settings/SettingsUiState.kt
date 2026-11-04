@@ -85,8 +85,6 @@ data class SettingsUiState(
 
     // Soft Reboot
     val useSoftReboot: Boolean = false,
-
-    // Dynamic Manager
 )
 
 @Immutable
