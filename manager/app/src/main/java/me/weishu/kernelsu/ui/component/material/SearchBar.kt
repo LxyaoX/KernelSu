@@ -1,88 +1,68 @@
 package me.weishu.kernelsu.ui.component.material
 
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.DecayAnimationSpec
-import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExpandedFullScreenContainedSearchBar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SearchBarValue
-import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.TopAppBarState
-import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
-import me.weishu.kernelsu.ui.animation.FolkAnimatedSlot
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** Height reserved for the large search bar, used as the scroll range of its collapse animation. */
-private val SearchBarExpandedHeight = 69.dp
-
+/**
+ * The search surface every list page shares: a bar carrying the page title, an inline search field,
+ * and a full-screen layer with the shortcuts or the results once the field is opened.
+ *
+ * It used to be Material's contained search bar (`LargeFlexibleTopAppBar` plus
+ * `ExpandedFullScreenContainedSearchBar`) with its own scroll-fraction collapse animation. miuix has
+ * no equivalent, so the bar is a plain row on the miuix surface colour and the full-screen layer is
+ * a dialog. The collapse animation is gone - the title no longer shrinks away while scrolling - and
+ * `defaultContent`/`searchContent` keep the contract they had.
+ */
 @Composable
 fun SearchAppBar(
     title: @Composable () -> Unit,
@@ -92,427 +72,241 @@ fun SearchAppBar(
     snackbarHostState: SnackbarHostState,
     navigationIcon: @Composable (() -> Unit)? = null,
     actions: @Composable (() -> Unit)? = null,
-    scrollBehavior: TopAppBarScrollBehavior? = null,
+    scrollBehavior: ScrollBehavior? = null,
     largeTitle: Boolean = true,
     topSearch: Boolean = false,
     searchBeforeActions: Boolean = false,
     collapsibleSearch: Boolean = false,
     searchPlaceholder: String = "",
     defaultContent: @Composable BoxScope.(bottomPadding: Dp, closeSearch: () -> Unit) -> Unit = { _, _ -> },
-    searchContent: @Composable BoxScope.(bottomPadding: Dp, closeSearch: () -> Unit) -> Unit = { _, _ -> }
+    searchContent: @Composable BoxScope.(bottomPadding: Dp, closeSearch: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    val scaledDensity = LocalDensity.current
-    val interactionSource = remember { MutableInteractionSource() }
+    var searchOpen by remember { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope()
-    val searchBarState = rememberContainedSearchBarState()
-    val textFieldState = rememberTextFieldState()
-    val currentQuery = textFieldState.text.toString()
-    val latestSearchText by rememberUpdatedState(searchText)
-    val isSearchExpanded = searchBarState.currentValue != SearchBarValue.Collapsed || searchBarState.targetValue != SearchBarValue.Collapsed
-    // A collapsible search bar only makes sense below a large title, and it needs the wrapper
-    // scroll behavior to know how far it has been tucked away.
-    val searchScrollBehavior = (scrollBehavior as? SearchAppBarScrollBehavior)
-        ?.takeIf { collapsibleSearch && largeTitle }
-    val searchBarFraction = searchScrollBehavior?.searchBarExpandedFraction ?: 1f
-    val isSearchBarCollapsed = searchBarFraction <= 0.01f
-    val isSearchBarCollapsing = searchScrollBehavior != null && searchBarFraction < 0.99f
-
-    // Folding the search bar away also gives up the focus and the keyboard, otherwise the text
-    // field would keep them while the bar is scrolled out of sight.
-    LaunchedEffect(isSearchBarCollapsing) {
-        if (isSearchBarCollapsing) {
-            focusManager.clearFocus(force = true)
-            keyboardController?.hide()
-        }
-    }
-    val searchIcon: @Composable () -> Unit = {
-        if (topSearch) {
-            FolkIconButton(
-                onClick = { scope.launch { searchBarState.animateToExpanded() } },
-            ) {
-                Icon(Icons.Filled.Search, contentDescription = null)
-            }
-        }
-    }
-    val appBarActions: @Composable RowScope.() -> Unit = {
-        if (searchBeforeActions) searchIcon()
-        actions?.invoke()
-        if (!searchBeforeActions) searchIcon()
-        // Once the large search bar has been tucked away, offer a small icon to bring it back.
-        if (searchScrollBehavior != null) {
-            FolkAnimatedSlot(visible = isSearchBarCollapsed) {
-                FolkIconButton(
-                    onClick = { scope.launch { searchScrollBehavior.expandSearchBar() } },
-                ) {
-                    Icon(Icons.Filled.Search, contentDescription = null)
-                }
-            }
-        }
-    }
-    var previousSearchBarValue by remember { mutableStateOf(searchBarState.currentValue) }
-    var shouldClearOnCollapse by remember { mutableStateOf(true) }
-    val clearSearchText: () -> Unit = {
-        textFieldState.setTextAndPlaceCursorAtEnd("")
-        onClearClick()
-    }
-    val collapseAndClear: () -> Unit = {
-        shouldClearOnCollapse = false
-        clearSearchText()
-        scope.launch { searchBarState.animateToCollapsed() }
+    val closeSearch: () -> Unit = {
+        searchOpen = false
         focusManager.clearFocus()
         keyboardController?.hide()
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            keyboardController?.hide()
+    val searchIcon: @Composable () -> Unit = {
+        FolkIconButton(onClick = { searchOpen = true }) {
+            Icon(Icons.Filled.Search, contentDescription = null)
         }
     }
 
-    LaunchedEffect(searchText) {
-        val current = textFieldState.text.toString()
-        if (current != searchText) {
-            textFieldState.setTextAndPlaceCursorAtEnd(searchText)
-        }
-    }
-
-    LaunchedEffect(textFieldState, latestSearchText) {
-        snapshotFlow { textFieldState.text.toString() }
-            .distinctUntilChanged()
-            .collect { value ->
-                if (value != latestSearchText) {
-                    onSearchTextChange(value)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Surface(color = MiuixTheme.colorScheme.surface) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(if (largeTitle) 64.dp else 56.dp)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    navigationIcon?.invoke()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = if (navigationIcon == null) 16.dp else 4.dp)
+                    ) {
+                        title()
+                    }
+                    val actionSlot: @Composable RowScope.() -> Unit = {
+                        if (searchBeforeActions && topSearch) searchIcon()
+                        actions?.invoke()
+                        if (!searchBeforeActions && topSearch) searchIcon()
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        content = actionSlot,
+                    )
                 }
+                SearchField(
+                    value = searchText,
+                    onValueChange = onSearchTextChange,
+                    onClearClick = onClearClick,
+                    placeholder = searchPlaceholder,
+                    editable = false,
+                    onOpen = { searchOpen = true },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+                Box(modifier = Modifier.height(8.dp))
             }
-    }
-
-    LaunchedEffect(searchBarState) {
-        snapshotFlow { searchBarState.currentValue }
-            .distinctUntilChanged()
-            .collect { value ->
-                val collapsedFromExpanded =
-                    previousSearchBarValue != SearchBarValue.Collapsed && value == SearchBarValue.Collapsed
-                previousSearchBarValue = value
-                if (collapsedFromExpanded) {
-                    if (shouldClearOnCollapse) {
-                        clearSearchText()
-                    }
-                    shouldClearOnCollapse = true
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                }
-            }
-    }
-
-    val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
-    NavigationBackHandler(
-        state = navEventState,
-        isBackEnabled = isSearchExpanded,
-        onBackCompleted = {
-            collapseAndClear()
-        }
-    )
-
-    val inputField: @Composable () -> Unit = {
-        CompositionLocalProvider(LocalDensity provides scaledDensity) {
-            SearchBarDefaults.InputField(
-                textFieldState = textFieldState,
-                searchBarState = searchBarState,
-                onSearch = {
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                },
-                placeholder = {
-                    if (searchPlaceholder.isNotEmpty()) {
-                        Text(searchPlaceholder)
-                    }
-                },
-                leadingIcon = {
-                    if (isSearchExpanded) {
-                        FolkIconButton(
-                            modifier = Modifier.padding(end = 8.dp),
-                            onClick = { collapseAndClear() },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
-                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            ),
-                        ) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, null)
-                        }
-                    } else {
-                        Icon(Icons.Filled.Search, null)
-                    }
-                },
-                trailingIcon = {
-                    if (isSearchExpanded && currentQuery.isNotEmpty()) {
-                        FolkIconButton(
-                            onClick = { clearSearchText() },
-                            content = { Icon(Icons.Filled.Close, null) }
-                        )
-                    }
-                },
-                interactionSource = interactionSource
-            )
         }
     }
 
-    Surface(
-        color = MiuixTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
+    if (searchOpen) {
+        Dialog(
+            onDismissRequest = closeSearch,
+            properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            if (largeTitle) {
-                LargeFlexibleTopAppBar(
-                    title = title,
-                    colors = expressiveTopAppBarColors(),
-                    navigationIcon = { if (navigationIcon != null) navigationIcon() },
-                    actions = appBarActions,
-                    windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                    scrollBehavior = scrollBehavior
-                )
-            } else {
-                TopAppBar(
-                    title = title,
-                    colors = expressiveTopAppBarColors(),
-                    navigationIcon = { if (navigationIcon != null) navigationIcon() },
-                    actions = appBarActions,
-                    windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                )
-            }
-
-            // A large title comes with a large search bar right below it. In the M3E layout the
-            // bar belongs to the app bar area, so it folds away as the list scrolls and the app
-            // bar collapses.
-            val largeSearchBar: @Composable () -> Unit = {
-                SearchBar(
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MiuixTheme.colorScheme.surface)
+                    .statusBarsPadding()
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 13.dp),
-
-                    state = searchBarState,
-                    inputField = inputField,
-                    colors = SearchBarDefaults.colors(
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
-                    ),
-                )
-            }
-            if (searchScrollBehavior != null) {
-                AnimatedVisibility(
-                    visible = !isSearchBarCollapsed,
-                    enter = EnterTransition.None,
-                    exit = ExitTransition.None,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(searchBarFraction)
-                        .collapseWithTopAppBar(searchBarFraction),
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    largeSearchBar()
+                    FolkIconButton(
+                        onClick = closeSearch,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    ) {
+                        Icon(Icons.Filled.Search, contentDescription = null)
+                    }
+                    SearchField(
+                        value = searchText,
+                        onValueChange = onSearchTextChange,
+                        onClearClick = onClearClick,
+                        placeholder = searchPlaceholder,
+                        editable = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 12.dp),
+                    )
                 }
-            } else if (!topSearch) {
-                largeSearchBar()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (searchText.isNotEmpty()) {
+                        searchContent(0.dp, closeSearch)
+                    } else {
+                        defaultContent(0.dp, closeSearch)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .imePadding()
+                            .padding(bottom = 16.dp)
+                    ) {
+                        SnackBarHost(hostState = snackbarHostState)
+                    }
+                }
             }
         }
     }
-
-    // Tapping the large search bar opens its full screen search, with the recent items while the
-    // query is empty and the results once something has been typed.
-    ExpandedFullScreenContainedSearchBar(
-        state = searchBarState,
-        inputField = inputField,
-        windowInsets = { SearchBarDefaults.fullScreenWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal) },
-        content = {
-            val bottomPadding = SearchBarDefaults.fullScreenWindowInsets.asPaddingValues().calculateBottomPadding()
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (currentQuery.isNotEmpty()) {
-                    searchContent(bottomPadding, collapseAndClear)
-                } else {
-                    defaultContent(bottomPadding, collapseAndClear)
-                }
-                Box(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .imePadding()
-                        .padding(bottom = 16.dp)
-                ) {
-                    SnackBarHost(hostState = snackbarHostState)
-                }
-            }
-        }
-    )
 }
 
 /**
- * Wraps the app bar scroll behavior so that a large search bar can be tucked away while the
- * content scrolls down and brought back when it scrolls up, while the app bar itself keeps
- * following [topAppBarScrollBehavior].
+ * The rounded field under the bar and inside the search layer.
+ *
+ * The inline copy is read-only: tapping it opens the search layer, which owns the only editable
+ * field. That keeps one keyboard and one cursor for the query, which is what the contained search
+ * bar did as well.
  */
-@Stable
-class SearchAppBarScrollBehavior internal constructor(
-    private val topAppBarScrollBehavior: TopAppBarScrollBehavior,
-    private val searchBarHeight: Float,
-) : TopAppBarScrollBehavior {
-    private var searchBarHeightOffset by mutableFloatStateOf(0f)
-    private var lastSearchBarScrollDelta = 0f
-    private var isUserScrollInProgress = false
-    private var ignoreCurrentScroll = false
-
-    /** 1f while the large search bar is fully visible, 0f once it is completely tucked away. */
-    val searchBarExpandedFraction: Float
-        get() = (1f + searchBarHeightOffset / searchBarHeight).coerceIn(0f, 1f)
-
-    override val state: TopAppBarState
-        get() = topAppBarScrollBehavior.state
-
-    override val isPinned: Boolean
-        get() = topAppBarScrollBehavior.isPinned
-
-    override val snapAnimationSpec: AnimationSpec<Float>?
-        get() = topAppBarScrollBehavior.snapAnimationSpec
-
-    override val flingAnimationSpec: DecayAnimationSpec<Float>?
-        get() = topAppBarScrollBehavior.flingAnimationSpec
-
-    /** Reveals the large search bar. */
-    suspend fun expandSearchBar() {
-        ignoreCurrentScroll = isUserScrollInProgress
-        lastSearchBarScrollDelta = 0f
-        animateSearchBarTo(0f)
+@Composable
+private fun SearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClearClick: () -> Unit,
+    placeholder: String,
+    editable: Boolean,
+    modifier: Modifier = Modifier,
+    onOpen: (() -> Unit)? = null,
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+    if (editable) {
+        LaunchedEffect(Unit) { focusRequester.requestFocus() }
     }
-
-    /** Tucks the large search bar away. */
-    fun collapseSearchBar() {
-        searchBarHeightOffset = -searchBarHeight
-        lastSearchBarScrollDelta = 0f
-        isUserScrollInProgress = false
-        ignoreCurrentScroll = false
-    }
-
-    fun reset() {
-        searchBarHeightOffset = 0f
-        lastSearchBarScrollDelta = 0f
-        isUserScrollInProgress = false
-        ignoreCurrentScroll = false
-    }
-
-    private fun consumeSearchBarScroll(delta: Float): Float {
-        val previousOffset = searchBarHeightOffset
-        searchBarHeightOffset = (previousOffset + delta).coerceIn(-searchBarHeight, 0f)
-        val consumed = searchBarHeightOffset - previousOffset
-        if (consumed != 0f) {
-            lastSearchBarScrollDelta = consumed
-        }
-        return consumed
-    }
-
-    private suspend fun animateSearchBarTo(targetOffset: Float, initialVelocity: Float = 0f) {
-        if (searchBarHeightOffset == targetOffset) return
-        Animatable(searchBarHeightOffset).animateTo(
-            targetValue = targetOffset,
-            animationSpec = snapAnimationSpec ?: spring(),
-            initialVelocity = initialVelocity,
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MiuixTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(percent = 50),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (onOpen != null) {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onOpen,
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .padding(horizontal = 14.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            searchBarHeightOffset = value.coerceIn(-searchBarHeight, 0f)
-        }
-        lastSearchBarScrollDelta = 0f
-    }
-
-    override val nestedScrollConnection: NestedScrollConnection = object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            if (source == NestedScrollSource.UserInput) {
-                isUserScrollInProgress = true
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+            Box(modifier = Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                    )
+                }
+                if (editable) {
+                    BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            color = MiuixTheme.colorScheme.onSurface,
+                            fontSize = MiuixTheme.textStyles.body2.fontSize,
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = { keyboardController?.hide() },
+                        ),
+                        cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
+                    )
+                } else if (value.isNotEmpty()) {
+                    Text(
+                        text = value,
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                    )
+                }
             }
-            // Scrolling back up, or a programmatic scroll: the app bar takes everything.
-            if (ignoreCurrentScroll || available.y >= 0f) {
-                return topAppBarScrollBehavior.nestedScrollConnection.onPreScroll(available, source)
+            if (value.isNotEmpty()) {
+                IconButton(
+                    onClick = onClearClick,
+                    backgroundColor = Color.Transparent,
+                    minHeight = 20.dp,
+                    minWidth = 20.dp,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Clear,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
             }
-            // Scrolling down: the search bar folds away before the large title starts collapsing.
-            val previousOffset = searchBarHeightOffset
-            consumeSearchBarScroll(available.y)
-            if (previousOffset != searchBarHeightOffset) {
-                return available.copy(x = 0f)
-            }
-            return topAppBarScrollBehavior.nestedScrollConnection.onPreScroll(available, source)
-        }
-
-        override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-            val topAppBarConsumed =
-                topAppBarScrollBehavior.nestedScrollConnection.onPostScroll(consumed, available, source)
-            if (ignoreCurrentScroll || available.y <= 0f) {
-                return topAppBarConsumed
-            }
-            // Scrolling back up: the app bar re-expands first, then the search bar slides back in
-            // with whatever scroll is left over. Without this the large search bar stays tucked
-            // away for good once it has been collapsed.
-            val remaining = available.y - topAppBarConsumed.y
-            return topAppBarConsumed + Offset(0f, consumeSearchBarScroll(remaining))
-        }
-
-        override suspend fun onPreFling(available: Velocity): Velocity {
-            if (ignoreCurrentScroll) {
-                return topAppBarScrollBehavior.nestedScrollConnection.onPreFling(available)
-            }
-            if (available.y < 0f && searchBarHeightOffset > -searchBarHeight) {
-                animateSearchBarTo(-searchBarHeight, available.y)
-                return available.copy(x = 0f)
-            }
-            return topAppBarScrollBehavior.nestedScrollConnection.onPreFling(available)
-        }
-
-        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-            isUserScrollInProgress = false
-            if (ignoreCurrentScroll) {
-                ignoreCurrentScroll = false
-                return topAppBarScrollBehavior.nestedScrollConnection.onPostFling(consumed, available)
-            }
-            if (searchBarHeightOffset > -searchBarHeight && searchBarHeightOffset < 0f) {
-                val shouldExpand =
-                    available.y > 0f || (available.y == 0f && lastSearchBarScrollDelta > 0f)
-                animateSearchBarTo(if (shouldExpand) 0f else -searchBarHeight, available.y)
-                return available.copy(x = 0f)
-            }
-            val topAppBarVelocity =
-                topAppBarScrollBehavior.nestedScrollConnection.onPostFling(consumed, available)
-            val remaining = available.y - topAppBarVelocity.y
-            if (remaining > 0f &&
-                topAppBarScrollBehavior.state.collapsedFraction < 0.01f &&
-                searchBarHeightOffset < 0f
-            ) {
-                animateSearchBarTo(0f, remaining)
-                return topAppBarVelocity
-            }
-            return topAppBarVelocity
         }
     }
 }
 
+/**
+ * Kept for source compatibility: pages ask for a scroll behaviour to hand to the bar and to
+ * `nestedScroll`. miuix's own behaviour is the only one in play now, so the Material one they used
+ * to pass is ignored.
+ */
 @Composable
 fun rememberSearchAppBarScrollBehavior(
-    topAppBarScrollBehavior: TopAppBarScrollBehavior,
-): SearchAppBarScrollBehavior {
-    val density = LocalDensity.current
-    return remember(topAppBarScrollBehavior, density) {
-        SearchAppBarScrollBehavior(
-            topAppBarScrollBehavior = topAppBarScrollBehavior,
-            searchBarHeight = with(density) { SearchBarExpandedHeight.toPx() },
-        )
-    }
-}
-
-/** Clips the content to [expandedFraction] of its height, keeping the bottom edge anchored. */
-private fun Modifier.collapseWithTopAppBar(expandedFraction: Float): Modifier =
-    this
-        .clipToBounds()
-        .layout { measurable, constraints ->
-            val placeable = measurable.measure(constraints.copy(minHeight = 0))
-            val visibleHeight = (placeable.height * expandedFraction.coerceIn(0f, 1f)).roundToInt()
-            layout(placeable.width, visibleHeight) {
-                placeable.placeRelative(x = 0, y = visibleHeight - placeable.height)
-            }
-        }
+    @Suppress("UNUSED_PARAMETER") topAppBarScrollBehavior: ScrollBehavior? = null,
+): ScrollBehavior = MiuixScrollBehavior()

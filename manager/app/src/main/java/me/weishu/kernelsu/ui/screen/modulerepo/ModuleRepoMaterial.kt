@@ -115,8 +115,6 @@ import me.weishu.kernelsu.ui.util.download
 import me.weishu.kernelsu.ui.util.isDownloadAvailable
 import top.yukonga.miuix.kmp.basic.TopAppBar as MiuixTopAppBar
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator as MiuixCircularProgressIndicator
 
 @Composable
@@ -132,8 +130,7 @@ fun ModuleRepoScreenMaterial(
     val pullToRefreshState = rememberPullToRefreshState()
     // The search bar is still the Material one, so this screen keeps a Material behaviour for it;
     // the detail sheet below has its own miuix one.
-    val scrollBehavior = TopAppBarDefaults
-        .exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = MiuixScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var pendingDownload by remember { mutableStateOf<(() -> Unit)?>(null) }

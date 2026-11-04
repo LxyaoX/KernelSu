@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
@@ -48,12 +49,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberBottomSheetState
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -113,7 +112,7 @@ fun KernelModuleScreen() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val pullState = rememberPullToRefreshState()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = MiuixScrollBehavior()
     val searchScrollBehavior = rememberSearchAppBarScrollBehavior(scrollBehavior)
     val installingMessage = stringResource(R.string.kernel_modules_installing)
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
