@@ -93,7 +93,6 @@ fun HomePagerMaterial(
                 systemInfo = state.systemInfo,
                 susfs = state.susfs,
                 zygiskProvider = state.zygiskProvider,
-                mount = state.mount,
                 onSusfs = actions.onSusfs,
             )
             Spacer(

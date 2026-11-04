@@ -51,12 +51,12 @@ mod module;
 #[cfg(target_os = "android")]
 mod module_config;
 #[cfg(target_os = "android")]
-mod module_mount;
-#[cfg(target_os = "android")]
 mod module_loader;
 #[cfg(any(target_os = "android", test))]
 #[cfg_attr(not(target_os = "android"), allow(dead_code))]
 mod module_markers;
+#[cfg(target_os = "android")]
+mod module_mount;
 #[cfg(target_os = "android")]
 mod pif;
 #[cfg(any(target_os = "android", test))]

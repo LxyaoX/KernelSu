@@ -550,7 +550,6 @@ enum Initrc {
     Refresh,
 }
 
-
 #[derive(clap::Subcommand, Debug)]
 enum Dynamic {
     /// Print an APK's v2 signature without applying it
