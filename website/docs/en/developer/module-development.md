@@ -384,6 +384,5 @@ No. It belongs to a blocking stage with an overall budget. Resident work belongs
 ## Related Pages
 
 - [Module Configuration](/en/developer/module-config/): CLI and limits for persistent and temporary configuration.
-- [Folk Mount](/en/builtin/folk-mount/): which mount backend publishes module files.
 - [YukiZygisk](/en/builtin/yukizygisk/): the injection provider Zygisk modules depend on.
 - [Managed Kernel Modules](/en/manager/kernel-module/): the `.ko` load path, which differs from standard modules.

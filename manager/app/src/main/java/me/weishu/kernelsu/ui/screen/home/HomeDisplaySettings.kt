@@ -19,7 +19,6 @@ internal data class HomeDisplaySettings(
     val hideFingerprint: Boolean,
     val hideZygisk: Boolean,
     val hideSusfs: Boolean,
-    val hideMount: Boolean,
     val hideKernelFullVersion: Boolean,
 )
 
@@ -31,7 +30,6 @@ internal fun rememberHomeDisplaySettings(): HomeDisplaySettings {
         hideFingerprint = repository.hideHomeFingerprint,
         hideZygisk = repository.hideHomeZygisk,
         hideSusfs = repository.hideHomeSusfs,
-        hideMount = repository.hideHomeMount,
         hideKernelFullVersion = repository.hideHomeKernelFullVersion,
     )
     var settings by remember { mutableStateOf(read()) }
@@ -42,7 +40,6 @@ internal fun rememberHomeDisplaySettings(): HomeDisplaySettings {
                 key == "hide_home_fingerprint" ||
                 key == "hide_home_zygisk" ||
                 key == "hide_home_susfs" ||
-                key == "hide_home_mount" ||
                 key == "hide_home_kernel_full_version"
             ) {
                 settings = read()

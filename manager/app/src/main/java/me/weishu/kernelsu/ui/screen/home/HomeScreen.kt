@@ -41,7 +41,6 @@ fun HomePager(
     isCurrentPage: Boolean = true,
     superuserCount: Int = 0,
     moduleEnabledCount: Int = 0,
-    metamodule: HomeMetamodule? = null,
 ) {
     val viewModel = viewModel<HomeViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -99,9 +98,7 @@ fun HomePager(
         onSusfs = { navigator.push(Route.Susfs) },
     )
 
-    val state = remember(uiState, metamodule) {
-        uiState.copy(mount = uiState.mount.copy(metamodule = metamodule))
-    }
+    val state = uiState
 
     HomePagerMaterial(
         state = state,

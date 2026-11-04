@@ -68,8 +68,8 @@ The internal module name comes from `.modinfo` `name=`. If that field is missing
 or ambiguous, the entry remains visible and removable, but load and autoload are
 rejected because a reliable runtime state cannot be established.
 
-The built-in `kernelsu` and `nomount` identities are protected from managed
-installation, loading, and autoload.
+The built-in `kernelsu` identity is protected from managed installation,
+loading, and autoload.
 
 ## Startup and safe mode
 

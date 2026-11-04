@@ -17,8 +17,8 @@ import me.weishu.kernelsu.ksuApp
  * The payload belongs to ksud. It ships inside `libksud.so`, ksud writes it to [ROOT] on every boot
  * and links that directory into `/data/adb/modules` there - because the library it carries opens
  * `/data/adb/modules/playintegrityfix/{module.prop,pif.prop,classes.dex}` by absolute name and has
- * no setting to move them. The link is a symbolic link, which is what keeps the thing out of the
- * module list and out of NoMount's planner.
+ * no setting to move them. The link is a symbolic link, which keeps it out of the module list, so
+ * the metamodule that publishes the module tree never sees it.
  *
  * So nothing here installs or removes a module: this object reports what ksud left on disk, flips
  * the disable marker that zygiskd reads, and edits `pif.prop` - the identity and the six switches.

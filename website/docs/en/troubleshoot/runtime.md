@@ -47,7 +47,6 @@ A failure in any layer can make the Manager pages look like "it opens but does n
 | The module switch is saved but files or scripts do not take effect | This boot, mount provider, scripts, safe mode | This page |
 | Abnormal Zygisk state | External provider, ABI, injection receipt, boot protection | [YukiZygisk](/en/builtin/yukizygisk/) |
 | Sui unavailable | Zygisk backend, Sui state, app permissions | [Sui](/en/builtin/sui/) |
-| NoMount falls back or has no rules | Driver, KMI assets, exception UIDs, module contributions | [NoMount](/en/builtin/nomount/) |
 | A built-in capability reports not supported | Kernel features, configuration, external provider | [Built-In Capabilities Overview](/en/builtin/) |
 | Importing a `.ko` fails or it does not load | Architecture, vermagic, dependencies, state records | [Kernel Modules](/en/manager/kernel-module/) |
 
@@ -141,7 +140,7 @@ flowchart TD
     E -->|script or stage failure| G["Warning / conservative fallback"]
 ```
 
-When the page reports a fallback, read the warning and the [Folk Mount](/en/builtin/folk-mount/) description first. The configuration may still say NoMount while the built-in engine did the mounting this time; that does not mean the setting was not saved, but that this boot degraded.
+When the page reports a fallback, read the warning and the Folk Mount description first. The configuration may still say NoMount while the built-in engine did the mounting this time; that does not mean the setting was not saved, but that this boot degraded.
 
 A successful NoMount driver load also requires API probing to pass. A load call returning, or a name appearing in `/proc/modules`, does not mean the driver can accept rules. Use this for the detailed state:
 
@@ -248,7 +247,5 @@ Reinstalling the APK will not solve these cases:
 - [Device Compatibility](/en/troubleshoot/compatibility/): KMI, ABI and capability gating.
 - [Manager Authentication Failure](/en/troubleshoot/manager-auth/): the signature and UAPI identity layer.
 - [No Root Request Prompt](/en/troubleshoot/root-request/): app authorization and Shell origins.
-- [Folk Mount](/en/builtin/folk-mount/): provider selection and fallback.
-- [NoMount](/en/builtin/nomount/): driver, rules and exception UIDs.
 - [YukiZygisk](/en/builtin/yukizygisk/): injection state and boot protection.
 - [Sui](/en/builtin/sui/): Zygisk dependency, permissions and service state.

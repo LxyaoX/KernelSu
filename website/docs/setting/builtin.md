@@ -22,11 +22,3 @@ copyright:
 ## Sui
 
 管理内置 Shizuku API 后端、载荷、权限与诊断。Sui 需要 Zygisk 提供者。详见 [Sui 使用指南](/builtin/sui/)。
-
-## Folk Mount
-
-选择自动、内置、仅元模块、NoMount 或关闭挂载。状态栏会显示本次启动实际使用的提供者，修改只影响下一次启动。详见 [Folk Mount](/builtin/folk-mount/)。
-
-## NoMount
-
-查看驱动、注入规则、模块贡献和例外应用。驱动 API 过旧或缺少当前 KMI 的模块时，应改用其他挂载后端。详见 [NoMount](/builtin/nomount/)。

@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.data.model.FolkMountMode
 import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.data.susfs.SusfsRepository
@@ -38,7 +37,6 @@ class SettingsViewModel(
         val generation = ++refreshGeneration
         _uiState.update {
             it.copy(
-                isFolkMountLoading = true,
                 isRekernelXLoading = true,
                 isBootPropsLoading = true,
             )
@@ -110,8 +108,6 @@ class SettingsViewModel(
             val isLateLoadMode = Natives.isLateLoadMode
             val kernelFullVersionAvailable = Natives.isManager && !Natives.getFullVersion().isNullOrBlank()
 
-            val folkMountResult = snapshot.folkMount
-            val nomountResult = snapshot.nomount
             val rekernelXResult = repo.getRekernelXStatus()
             val bootPropsResult = repo.getBootPropsStatus()
             // The home card's SUSFS row switch only makes sense when the kernel reports SUSFS.
@@ -139,7 +135,6 @@ class SettingsViewModel(
                     hideHomeFingerprint = repo.hideHomeFingerprint,
                     hideHomeZygisk = repo.hideHomeZygisk,
                     hideHomeSusfs = repo.hideHomeSusfs,
-                    hideHomeMount = repo.hideHomeMount,
                     hideHomeKernelFullVersion = repo.hideHomeKernelFullVersion,
                     kernelFullVersionAvailable = kernelFullVersionAvailable,
                     susfsDetected = susfsDetected,
@@ -169,12 +164,6 @@ class SettingsViewModel(
                     allowAnyDynamicManager = allowAnyDynamicManager,
                     isDynamicManagerAvailable = isDynamicManagerAvailable,
                     isLateLoadMode = isLateLoadMode,
-                    folkMountStatus = folkMountResult.getOrNull(),
-                    folkMountReadError = folkMountResult.isFailure,
-                    isFolkMountLoading = false,
-                    nomountStatus = nomountResult.getOrNull(),
-                    nomountReadError = nomountResult.isFailure,
-                    isNomountLoading = false,
                     rekernelXStatus = rekernelXResult.getOrNull(),
                     rekernelXReadError = rekernelXResult.isFailure,
                     isRekernelXLoading = false,
@@ -209,7 +198,6 @@ class SettingsViewModel(
                     hideHomeFingerprint = repo.hideHomeFingerprint,
                     hideHomeZygisk = repo.hideHomeZygisk,
                     hideHomeSusfs = repo.hideHomeSusfs,
-                    hideHomeMount = repo.hideHomeMount,
                     colorStyle = repo.colorStyle,
                     autoJailbreak = repo.autoJailbreak,
                     useSoftReboot = repo.useSoftReboot,
@@ -351,11 +339,6 @@ class SettingsViewModel(
     fun setHideHomeSusfs(hidden: Boolean) {
         repo.hideHomeSusfs = hidden
         _uiState.update { it.copy(hideHomeSusfs = hidden) }
-    }
-
-    fun setHideHomeMount(hidden: Boolean) {
-        repo.hideHomeMount = hidden
-        _uiState.update { it.copy(hideHomeMount = hidden) }
     }
 
     fun setHideHomeKernelFullVersion(hidden: Boolean) {
@@ -510,42 +493,6 @@ class SettingsViewModel(
             if (repo.setSulogEnabled(enabled)) {
                 repo.execKsudFeatureSave()
                 _uiState.update { it.copy(isSulogEnabled = enabled) }
-            }
-        }
-    }
-
-    fun setFolkMountMode(mode: FolkMountMode) {
-        val state = _uiState.value
-        // Ignore taps while unavailable, while loading, or while a write is in flight.
-        val status = state.folkMountStatus
-            ?: return
-        if (state.folkMountReadError || state.isFolkMountLoading || state.isFolkMountWriting) return
-        if (!status.shouldWrite(mode)) return
-
-        _uiState.update { it.copy(isFolkMountWriting = true) }
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = repo.setFolkMountMode(mode)
-            if (result.isSuccess) {
-                // Re-read on success; on a failed re-read keep the old status.
-                val refreshed = repo.getFolkMountStatus()
-                _uiState.update {
-                    it.copy(
-                        folkMountStatus = refreshed.getOrNull() ?: it.folkMountStatus,
-                        folkMountReadError = refreshed.isFailure,
-                        isFolkMountWriting = false,
-                    )
-                }
-            } else {
-                // Keep the previous selection and surface the failure.
-                _uiState.update { it.copy(isFolkMountWriting = false) }
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        ksuApp,
-                        result.exceptionOrNull()?.message
-                            ?: ksuApp.getString(R.string.settings_folk_mount_write_failed),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
             }
         }
     }

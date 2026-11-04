@@ -43,8 +43,6 @@ mod lkm_image_btf;
 #[cfg(target_os = "android")]
 mod lua_probe;
 #[cfg(target_os = "android")]
-mod magic_mount;
-#[cfg(target_os = "android")]
 mod magica;
 #[cfg(target_os = "android")]
 mod metamodule;
@@ -53,22 +51,12 @@ mod module;
 #[cfg(target_os = "android")]
 mod module_config;
 #[cfg(target_os = "android")]
+mod module_mount;
+#[cfg(target_os = "android")]
 mod module_loader;
 #[cfg(any(target_os = "android", test))]
 #[cfg_attr(not(target_os = "android"), allow(dead_code))]
 mod module_markers;
-#[cfg(target_os = "android")]
-mod mount_capture;
-#[cfg(any(target_os = "android", test))]
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
-mod mount_guard;
-#[cfg(target_os = "android")]
-#[cfg(any(target_os = "android", test))]
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
-mod nomount;
-#[cfg(any(target_os = "android", test))]
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
-mod nomount_plan;
 #[cfg(target_os = "android")]
 mod pif;
 #[cfg(any(target_os = "android", test))]

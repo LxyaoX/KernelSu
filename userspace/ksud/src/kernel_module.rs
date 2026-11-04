@@ -35,7 +35,7 @@ const MAX_CONFIG_BYTES: usize = 256 * 1024;
 const LOCK_TIMEOUT: Duration = Duration::from_secs(2);
 #[cfg(target_os = "android")]
 const AUTOLOAD_STARTUP_WAIT: Duration = Duration::from_secs(8);
-const PROTECTED_NAMES: &[&str] = &["kernelsu", "nomount"];
+const PROTECTED_NAMES: &[&str] = &["kernelsu"];
 
 #[derive(Debug, Subcommand)]
 pub enum Command {

@@ -126,7 +126,6 @@ import me.weishu.kernelsu.ui.screen.appprofile.AppProfileScreen
 import me.weishu.kernelsu.ui.screen.colorpalette.ColorPaletteScreen
 import me.weishu.kernelsu.ui.screen.executemoduleaction.ExecuteModuleActionScreen
 import me.weishu.kernelsu.ui.screen.flash.FlashScreen
-import me.weishu.kernelsu.ui.screen.home.HomeMetamodule
 import me.weishu.kernelsu.ui.screen.home.HomePager
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
 import me.weishu.kernelsu.ui.screen.module.ModulePager
@@ -289,12 +288,6 @@ open class MainActivity : FragmentActivity() {
                                 entry<Route.Susfs> { me.weishu.kernelsu.ui.screen.SusfsScreen() }
                                 entry<Route.YukiZygisk> {
                                     me.weishu.kernelsu.ui.screen.yukizygisk.YukiZygiskScreen()
-                                }
-                                entry<Route.Nomount> {
-                                    me.weishu.kernelsu.ui.screen.nomount.NomountScreen()
-                                }
-                                entry<Route.NomountExclusions> {
-                                    me.weishu.kernelsu.ui.screen.nomount.NomountExclusionsScreen()
                                 }
                                 entry<Route.Teesim> {
                                     me.weishu.kernelsu.ui.screen.teesim.TeesimScreen()
@@ -564,15 +557,6 @@ fun MainScreen(
     }
 
     val moduleEnabledCount = moduleUiState.modules.count { it.enabled }
-    val homeMetamodule = remember(moduleUiState.modules) {
-        moduleUiState.modules.firstOrNull { it.metamodule && !it.remove }?.let { module ->
-            HomeMetamodule(
-                id = module.id,
-                name = module.name.ifBlank { module.id },
-                version = module.version,
-            )
-        }
-    }
 
     val navigationBadge = if (badgeEnabled) {
         NavigationBadgeState(
@@ -640,7 +624,7 @@ fun MainScreen(
             ) { page ->
                 val isCurrentPage = page == settledPage
                 when (destinations.getOrNull(page)) {
-                    BottomBarDestination.Home -> if (renderPagerPages || isCurrentPage) HomePager(navController, bottomInnerPadding, isCurrentPage, superuserCount, moduleEnabledCount, homeMetamodule)
+                    BottomBarDestination.Home -> if (renderPagerPages || isCurrentPage) HomePager(navController, bottomInnerPadding, isCurrentPage, superuserCount, moduleEnabledCount)
                     BottomBarDestination.SuperUser -> if (renderPagerPages || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
                     BottomBarDestination.Module -> if (renderPagerPages || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
                     BottomBarDestination.Setting -> if (renderPagerPages || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)

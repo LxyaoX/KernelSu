@@ -157,7 +157,6 @@ fun FirstRunGuide(onDismiss: () -> Unit) {
                                         verticalArrangement = Arrangement.spacedBy(14.dp),
                                     ) {
                                         FeatureRow(stringResource(R.string.guide_feature_zygisk))
-                                        FeatureRow(stringResource(R.string.guide_feature_nomount))
                                     }
                                 }
 

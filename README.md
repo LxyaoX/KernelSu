@@ -44,7 +44,7 @@ FinaSU provides:
 
 ### KernelSU modules
 
-Standard KernelSU modules are managed from the manager. Modules are injected through NoMount, the built-in VFS backend, so no metamodule is needed; a single active metamodule is still recognised and listed.
+Standard KernelSU modules are managed from the manager. Publishing them into the filesystem is the job of a metamodule you install; the manager recognises it and lists it with the rest.
 
 ### YukiZygisk
 
@@ -54,17 +54,13 @@ YukiZygisk is the built-in Zygisk engine. Injection happens in the kernel featur
 
 SUSFS management is capability-gated. The controls appear only on kernels that support it, and every configuration change is applied with a receipt.
 
-### Folk-Mount
+### Module mounting
 
-Folk-Mount is the name the manager gives its module-mount backend. Only two settings exist: NoMount (the VFS driver, the default) and off.
-
-### NoMount
-
-NoMount is the built-in VFS redirection backend: instead of mounting anything it takes over path resolution and directory iteration in a kernel module, so `/proc/mounts` stays clean. The module ships inside ksud (embedded per KMI, built by this repository); the backend needs neither a metamodule nor the `nm` binary.
-
-The manager exposes the driver state, the number of active rules, visibility exclusions and a "mounting off" mode; the backend can be set to NoMount (the default) or off. There is no second engine behind it: when the driver cannot be loaded, nothing is injected for that boot and the settings page says so instead of mounting another way. ksud also records each risky step before it runs: if a NoMount injection never reached boot completion, the next boot skips injection entirely, and the reason lands in `/data/adb/ksu/log/mount.log` — the same bounded, rotated log that records how many rules each boot injected and which directories they landed in, which is what a bug report needs to tell whether an injection touched a boot-critical path. To find out what a stuck boot was waiting for, arm `ksud mount capture on` first (150s after a boot that never finishes, or `ksud mount capture on 60`; `off` disarms): the capture lands in `/data/adb/ksu/log/mount_capture.log` with the blocked-task stacks from `sysrq w`, the end of the kernel log, the D-state tasks and pstore. Visibility is an exception list kept by ksud: every app sees the injected files until it is added, and the NoMount page copies each app profile's "unmount modules" verdict into that list on demand, so later profile changes need another copy.
-
-Directory symlinks are traversed as directories and merged file by file, with cycle detection and per-module path deduplication. A `.replace` marker or opaque directory defaults to file merging; only the explicitly allowlisted `/product/fonts` target may become a directory redirect, and only when its stock target is absent or empty. Partition roots and directories named `lib64`, `lib`, `bin` or `etc` are never directory-replaced. Downgrades are logged, `mount.log` includes `dir_replace=N`, and `ksud nomount inject --dry-run --verbose` labels file redirects and directory replacements separately.
+Module mounting is delegated to the metamodule you install (NoMount, meta-overlayfs, ...). This
+build ships no mount engine of its own: the built-in NoMount driver, its rule planner and the
+mount-mode switch are gone, so a metamodule's own `metamount.sh` is the only thing that publishes
+the module tree at boot. Without one, modules stay inert and `ksud` says so in the log instead of
+falling back to a second engine.
 
 ### TEESimulator
 

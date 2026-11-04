@@ -1,7 +1,7 @@
 use crate::module::{ScriptWait, handle_updated_modules, prune_modules};
 use crate::utils::is_safe_mode;
 use crate::{
-    assets, defs, ksucalls, magic_mount, metamodule, mount_guard, restorecon,
+    assets, defs, ksucalls, metamodule, module_mount, restorecon,
     utils::{self},
 };
 use anyhow::{Context, Result};
@@ -154,10 +154,9 @@ pub fn on_post_fs_data() -> Result<()> {
         warn!("load system.prop failed: {e}");
     }
 
-    // Folk Mount: run the selected provider (metamodule script or the built-in
-    // executor; never both) before the post-mount stage to preserve the
-    // KernelSU contract.
-    if let Err(e) = magic_mount::mount_selected_provider() {
+    // Hand injection to the installed metamodule before the post-mount stage, to
+    // preserve the KernelSU contract: modules are visible to every later stage.
+    if let Err(e) = module_mount::mount_modules() {
         warn!("module mount failed: {e:#}");
     }
 
@@ -259,12 +258,6 @@ pub fn on_boot_completed() {
     ksucalls::report_boot_complete();
     info!("on_boot_completed triggered!");
     crate::preinit::on_boot_completed();
-    // The boot reached a usable state, so the step recorded for it finished:
-    // dropping that record is what tells the next boot which provider may run
-    // again (a record from an earlier boot has to stay, see `mount_guard`).
-    if let Err(error) = mount_guard::clear_if_ours(std::path::Path::new(defs::MOUNT_INFLIGHT)) {
-        warn!("could not clear the completed mount guard: {error:#}");
-    }
     // A post-fs-data migration may have had nothing to adopt yet (the package
     // scan had not produced anything); by now it certainly has.
     if let Err(e) = crate::dynamic_manager::finish_migration() {

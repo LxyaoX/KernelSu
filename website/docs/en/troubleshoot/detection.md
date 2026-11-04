@@ -189,7 +189,5 @@ FinaSU cannot verify its injection result. Check the external provider's own man
 
 - [App Profile](/en/manager/app-profile/): non-Root module visibility.
 - [Hiding & Kernel Security](/en/setting/hiding/): SELinux Hide, mount filtering and AVC Spoof.
-- [Folk Mount](/en/builtin/folk-mount/): mount providers and the visibility model.
-- [NoMount](/en/builtin/nomount/): VFS redirection, exception UIDs and detection boundaries.
 - [SUSFS](/en/builtin/susfs/): optional kernel integration and the LKM.
 - [Passing Detection](/en/troubleshoot/pass-detection/): when a detector is not all green, decide whether more work is worth it.

@@ -3,7 +3,7 @@ use log::{info, warn};
 use std::{ffi::CString, process::Command, time::Instant};
 
 use crate::module::{ScriptWait, handle_updated_modules, prune_modules};
-use crate::{assets, defs, init_event, magic_mount, mount_guard, restorecon, utils};
+use crate::{assets, defs, init_event, module_mount, restorecon, utils};
 
 fn dump_process_info(label: &str) {
     use rustix::process::{getgid, getgroups, getpid, getuid};
@@ -128,8 +128,8 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
         warn!("load system.prop failed: {e}");
     }
 
-    // 10. Run the selected provider (metamodule script or built-in executor).
-    if let Err(e) = magic_mount::mount_selected_provider() {
+    // 10. Hand injection to the installed metamodule.
+    if let Err(e) = module_mount::mount_modules() {
         warn!("module mount failed: {e:#}");
     }
 
@@ -141,11 +141,6 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
 
     // 13. Execute boot-completed stage scripts (non-blocking)
     init_event::run_stage("boot-completed", ScriptWait::NoWait);
-
-    // The jailbreak path reaches the end of its own boot sequence here, so the
-    // step recorded for it is done: a record that survives has to mean the
-    // injection stopped this device instead.
-    mount_guard::clear_if_ours(std::path::Path::new(defs::MOUNT_INFLIGHT))?;
 
     // 14. Restart Manager so it gets a fresh ksu fd from the newly loaded kernel module
     info!("Restarting KernelSU Manager {package_name}...");

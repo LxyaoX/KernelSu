@@ -40,14 +40,10 @@ import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.navigation3.Route
-import me.weishu.kernelsu.data.model.FolkMountMode
-import me.weishu.kernelsu.data.model.FolkMountProvider
-import me.weishu.kernelsu.data.model.NomountDriverState
 import me.weishu.kernelsu.ui.component.KsuIsValid
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
 import me.weishu.kernelsu.ui.component.material.SegmentedListItem
-import me.weishu.kernelsu.ui.screen.nomount.nomountUnavailableReason
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -184,15 +180,6 @@ fun AppearanceCategoryContent(uiState: SettingsUiState, actions: SettingsScreenA
                 startAction = { Icon(Icons.Rounded.VisibilityOff, contentDescription = null) },
                 checked = uiState.hideHomeSusfs,
                 onCheckedChange = actions.onSetHideHomeSusfs,
-            )
-        }
-        item(visible = uiState.folkMountStatus != null && !uiState.folkMountReadError) {
-            SwitchPreference(
-                title = stringResource(R.string.settings_hide_home_mount),
-                summary = stringResource(R.string.settings_hide_home_mount_summary),
-                startAction = { Icon(Icons.Filled.Layers, contentDescription = null) },
-                checked = uiState.hideHomeMount,
-                onCheckedChange = actions.onSetHideHomeMount,
             )
         }
         item(visible = uiState.kernelFullVersionAvailable) {
@@ -387,128 +374,6 @@ fun FunctionCategoryContent(uiState: SettingsUiState, actions: SettingsScreenAct
                         summary = stringResource(id = R.string.yukizygisk_summary),
                         startAction = { Icon(Icons.Filled.Vaccines, stringResource(id = R.string.yukizygisk_title)) },
                         onClick = { navigator.push(Route.YukiZygisk) },
-                    )
-                },
-                {
-                    val folkMountStatus = uiState.folkMountStatus
-                    val available = folkMountStatus != null && !uiState.folkMountReadError
-                    val mode = folkMountStatus?.configuredMode
-                    val modeItems = listOf(
-                        stringResource(id = R.string.settings_folk_mount_mode_nomount),
-                        stringResource(id = R.string.settings_folk_mount_mode_off),
-                    )
-                    val summary = when {
-                        uiState.isFolkMountLoading ->
-                            stringResource(id = R.string.settings_folk_mount_summary)
-
-                        !available ->
-                            stringResource(id = R.string.settings_folk_mount_unavailable_summary)
-
-                        else -> {
-                            val base = stringResource(
-                                id = when (mode) {
-                                    FolkMountMode.NOMOUNT -> R.string.settings_folk_mount_mode_nomount_summary
-                                    FolkMountMode.OFF -> R.string.settings_folk_mount_mode_off_summary
-                                    null -> R.string.settings_folk_mount_summary
-                                }
-                            )
-                            val bootLine = when (folkMountStatus.bootProvider) {
-                                FolkMountProvider.BUILTIN -> stringResource(
-                                    id = R.string.settings_folk_mount_boot_provider,
-                                    stringResource(id = R.string.settings_folk_mount_provider_builtin)
-                                )
-
-                                FolkMountProvider.METAMODULE -> stringResource(
-                                    id = R.string.settings_folk_mount_boot_provider,
-                                    stringResource(id = R.string.settings_folk_mount_provider_metamodule)
-                                )
-
-                                FolkMountProvider.NOMOUNT -> stringResource(
-                                    id = R.string.settings_folk_mount_boot_provider,
-                                    stringResource(id = R.string.settings_folk_mount_provider_nomount)
-                                )
-
-                                FolkMountProvider.NONE -> stringResource(
-                                    id = R.string.settings_folk_mount_provider_none
-                                )
-
-                                null -> stringResource(id = R.string.settings_folk_mount_boot_provider_unknown)
-                            }
-                            // The magic-mount engine is no longer selectable, so the only hint
-                            // left is the one that explains a VFS fallback.
-                            val compatHint = when {
-                                // A boot that fell back to another provider is the one case the
-                                // VFS driver asks the user to retry; the daemon's own warning is
-                                // more specific than the generic hint below.
-                                mode == FolkMountMode.NOMOUNT &&
-                                    folkMountStatus.bootProvider != null &&
-                                    folkMountStatus.bootProvider != FolkMountProvider.NOMOUNT ->
-                                    folkMountStatus.bootWarning
-                                        ?: stringResource(
-                                            id = R.string.settings_folk_mount_nomount_unavailable_hint
-                                        )
-
-                                mode == FolkMountMode.NOMOUNT &&
-                                    folkMountStatus.bootProvider != null &&
-                                    folkMountStatus.bootProvider != FolkMountProvider.NOMOUNT ->
-                                    folkMountStatus.bootWarning
-                                        ?: stringResource(
-                                            id = R.string.settings_folk_mount_nomount_unavailable_hint
-                                        )
-
-                                else -> null
-                            }
-                            listOfNotNull(
-                                base,
-                                bootLine,
-                                stringResource(id = R.string.settings_folk_mount_reboot_hint),
-                                compatHint,
-                            ).joinToString("\n")
-                        }
-                    }
-                    OverlayDropdownPreference(
-                        title = stringResource(id = R.string.settings_folk_mount),
-                        summary = summary,
-                        items = if (available) modeItems else emptyList(),
-                        startAction = { Icon(Icons.Filled.Layers, contentDescription = null) },
-                        selectedIndex = mode?.ordinal ?: 0,
-                        onSelectedIndexChange = {
-                            index ->
-                                                       FolkMountMode.entries.getOrNull(index)?.let(actions.onSetFolkMountMode)
-                        },
-                        enabled = available && !uiState.isFolkMountLoading && !uiState.isFolkMountWriting,
-                    )
-                },
-                {
-                    // NoMount is its own page: the row only reports the driver
-                    // and injection state, never a success it did not observe.
-                    val nomount = uiState.nomountStatus
-                    val nomountSummary = when {
-                        uiState.isNomountLoading -> stringResource(R.string.nomount_loading)
-                        uiState.nomountReadError -> stringResource(R.string.nomount_read_error)
-                        nomount == null -> stringResource(R.string.nomount_loading)
-                        // Say why it is unusable and what to do, not just that it is.
-                        !nomount.apiOk -> nomountUnavailableReason(nomount) ?: stringResource(
-                            id = R.string.nomount_driver_unavailable,
-                            stringResource(
-                                id = when (nomount.driverState) {
-                                    NomountDriverState.ABSENT -> R.string.nomount_driver_absent
-                                    NomountDriverState.OUTDATED -> R.string.nomount_driver_outdated
-                                    NomountDriverState.READY -> R.string.nomount_driver_ready
-                                }
-                            )
-                        )
-                        else -> stringResource(
-                            id = R.string.nomount_rules_value,
-                            nomount.rulesApplied,
-                            nomount.rulesExpected,
-                        )
-                    }
-                    ArrowPreference(
-                        title = stringResource(id = R.string.settings_nomount),
-                        summary = nomountSummary,
-                        startAction = { Icon(Icons.Filled.Layers, null) },
-                        onClick = actions.onOpenNomount,
                     )
                 },
                 {

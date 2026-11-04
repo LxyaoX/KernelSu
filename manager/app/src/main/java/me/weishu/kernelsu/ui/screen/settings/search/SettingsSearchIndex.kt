@@ -275,16 +275,6 @@ val settingsSearchIndex: List<SettingsSearchEntry> = buildList {
     )
     add(
         SettingsCategory.APPEARANCE.row(
-            id = "appearance.hide_home_mount",
-            titleRes = R.string.settings_hide_home_mount,
-            summaryRes = R.string.settings_hide_home_mount_summary,
-            icon = Icons.Filled.Layers,
-            aliases = listOf("home", "mount", "metamodule", "vfs", "hide", "card"),
-            available = { it.folkMountStatus != null && !it.folkMountReadError },
-        )
-    )
-    add(
-        SettingsCategory.APPEARANCE.row(
             id = "appearance.hide_home_kernel_full_version",
             titleRes = R.string.settings_hide_home_kernel_full_version,
             summaryRes = R.string.settings_hide_home_kernel_full_version_summary,
@@ -523,24 +513,6 @@ val settingsSearchIndex: List<SettingsSearchEntry> = buildList {
             icon = Icons.Filled.Vaccines,
             route = Route.YukiZygisk,
             aliases = listOf("yukizygisk", "zygisk", "injection", "注入"),
-        )
-    )
-    add(
-        SettingsCategory.FUNCTION.row(
-            id = "function.folk_mount",
-            titleRes = R.string.settings_folk_mount,
-            summaryRes = R.string.settings_folk_mount_summary,
-            icon = Icons.Filled.Layers,
-            aliases = listOf("mount", "metamodule", "overlay", "builtin", "nomount"),
-        )
-    )
-    add(
-        SettingsCategory.FUNCTION.page(
-            id = "function.nomount",
-            titleRes = R.string.settings_nomount,
-            icon = Icons.Filled.Layers,
-            route = Route.Nomount,
-            aliases = listOf("nomount", "no mount", "exclusion", "injection"),
         )
     )
     add(

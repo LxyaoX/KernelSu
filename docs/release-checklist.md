@@ -6,8 +6,8 @@ experience. Keep it in sync with `.github/workflows/release.yml`,
 
 ## 1. How a release reaches a user
 
-1. Pushing a `v*` tag runs the `Release` workflow: the DDK matrix builds `kernelsu.ko` and
-   `nomount.ko` per KMI, `ksuinit` and `ksud` follow, the manager
+1. Pushing a `v*` tag runs the `Release` workflow: the DDK matrix builds `kernelsu.ko`,
+   `ksuinit` and `ksud` follow, the manager
    APK is built and repacked with that `ksud`, and `softprops/action-gh-release` publishes the APK
    plus a zip containing the standalone `kernelsu.ko` and `ksud` builds.
 2. The manager calls `GET https://api.github.com/repos/LyraVoid/FinaSU/releases/latest` every time
@@ -50,7 +50,7 @@ release) takes over the update prompt for everyone.
    `git push`; the tag itself is what CI builds, so any remote branch carrying that commit is enough.
    `master` only moves when `dev` is merged into it.
 2. Tag and push: `git tag -a v0.1.0 -m "FinaSU v0.1.0" && git push origin v0.1.0`.
-3. Wait for the `Release` workflow (LKM and NoMount via DDK, ksuinit, ksud for three
+3. Wait for the `Release` workflow (LKM via DDK, ksuinit, ksud for three
    Android ABIs plus the desktop targets, manager APK, repack and resign, then the GitHub release).
 4. Write the release notes. The body is the changelog shown in the manager's update dialog; an empty
    body silently skips that dialog. It can be edited after the workflow finishes, or generated with
@@ -89,7 +89,6 @@ curl -s https://api.github.com/repos/LyraVoid/FinaSU/releases/latest |
 | Payload | arm64 |
 | --- | --- |
 | `kernelsu.ko` (4 KMIs) | yes |
-| `nomount.ko` (4 KMIs) | yes |
 | YukiZygisk payload (daemons + libraries), 32 and 64 bit | yes |
 | `ksuinit`, `waitsys`, `bootctl`, `busybox`, `mkbootfs` | yes |
 
@@ -114,8 +113,7 @@ curl -s https://api.github.com/repos/LyraVoid/FinaSU/releases/latest |
 
 ```bash
 unzip -p KernelSU_vX.Y.Z_<code>-release.apk lib/arm64-v8a/libksud.so > /tmp/libksud.so
-for p in 'android1[2-7]-[0-9]+\.[0-9]+_kernelsu\.ko' 'android1[2-7]-[0-9]+\.[0-9]+_nomount\.ko' \
-         'yukizygisk/zygiskd64'; do
+for p in 'android1[2-7]-[0-9]+\.[0-9]+_kernelsu\.ko' 'yukizygisk/zygiskd64'; do
   printf '%-46s %s\n' "$p" "$(grep -a -o -E -- "$p" /tmp/libksud.so | wc -l)"
 done
 ```

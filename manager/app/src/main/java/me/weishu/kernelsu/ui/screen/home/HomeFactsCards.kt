@@ -14,7 +14,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.data.model.FolkMountProvider
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -28,7 +27,6 @@ internal fun InfoCard(
     modifier: Modifier = Modifier,
     susfs: me.weishu.kernelsu.data.susfs.SusfsStatus = me.weishu.kernelsu.data.susfs.SusfsStatus(),
     zygiskProvider: String? = null,
-    mount: HomeMount = HomeMount(),
     onSusfs: () -> Unit = {},
 ) {
     val selinuxDisplay = selinuxDisplayName(systemInfo.selinuxStatus)
@@ -43,7 +41,6 @@ internal fun InfoCard(
     val deviceModelLabel = stringResource(R.string.home_device_model)
     val fingerprintLabel = stringResource(R.string.home_fingerprint)
     val zygiskLabel = stringResource(R.string.home_zygisk_implement)
-    val mountLabel = stringResource(R.string.home_mount_implementation)
     val susfsLabel = stringResource(R.string.susfs_title)
 
     val systemRows = mutableListOf<SpecRow>()
@@ -60,11 +57,6 @@ internal fun InfoCard(
     }
     if (zygiskProvider != null && !display.hideZygisk) {
         systemRows += SpecRow(zygiskLabel, zygiskProvider)
-    }
-    if (!display.hideMount) {
-        homeMountValue(mount)?.let { value ->
-            systemRows += SpecRow(mountLabel, value)
-        }
     }
     if (susfs.detected && !display.hideSusfs) {
         val management = me.weishu.kernelsu.ui.screen.susfsManagementLabel(susfs.management)
@@ -150,17 +142,4 @@ private fun SpecSheet(
     }
 }
 
-/** The provider that really mounted modules this boot, or null when it cannot be named. */
-@Composable
-private fun homeMountValue(mount: HomeMount): String? = when (mount.provider) {
-    FolkMountProvider.METAMODULE -> listOfNotNull(
-        stringResource(R.string.settings_folk_mount_provider_metamodule),
-        mount.metamodule?.name?.takeIf { it.isNotBlank() } ?: mount.metamoduleId,
-        mount.metamodule?.version?.takeIf { it.isNotBlank() && it != "Unknown" },
-    ).joinToString(" · ")
 
-    FolkMountProvider.BUILTIN -> stringResource(R.string.home_mount_builtin_magic)
-    FolkMountProvider.NOMOUNT -> stringResource(R.string.home_mount_builtin_vfs)
-    FolkMountProvider.NONE -> stringResource(R.string.settings_folk_mount_mode_off)
-    null -> null
-}

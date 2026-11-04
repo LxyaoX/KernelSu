@@ -28,26 +28,20 @@ The word "built-in" here describes that the feature ships with FinaSU. It is not
 
 | Goal | Use | Check First | When It Takes Effect |
 | --- | --- | --- | --- |
-| Make Magisk-style modules appear in system paths | [Folk Mount](/en/builtin/folk-mount/) | Current mount mode, module directory | Usually next boot |
 | Run Zygisk modules | YukiZygisk | Whether the kernel module ships the injection runtime | Next boot |
 | Give apps that support the Shizuku API Root or Shell | [Sui](/en/builtin/sui/) | FinaSU driver, Zygisk backend, Sui payload | Usually a reboot after enabling |
-| Inject modules without creating traditional mount records | [NoMount](/en/builtin/nomount/) | VFS driver state, current KMI, mount mode | Injected at boot, rules can be changed while running |
 | Use existing SUSFS hiding capabilities | [SUSFS](/en/builtin/susfs/) | Kernel source integration or a loaded SUSFS-LKM | Depends on the current implementation |
 
 :::
 
 ## How They Work Together
 
-These capabilities are not a linear feature list. Folk Mount and NoMount decide how module files are seen; YukiZygisk injects code into app processes with kernel help; Sui then uses Zygisk to provide the Shizuku API backend. SUSFS depends on kernel source integration or a loaded SUSFS-LKM.
+These capabilities are not a linear feature list. How module files become visible is decided by the metamodule you install, since FinaSU no longer ships a mount engine; YukiZygisk injects code into app processes with kernel help; Sui then uses Zygisk to provide the Shizuku API backend. SUSFS depends on kernel source integration or a loaded SUSFS-LKM.
 
 ```mermaid
 flowchart TD
-    K["FinaSU kernel driver"] --> M["Folk Mount"]
-    K --> Z["YukiZygisk"]
-
-    M --> B["Built-in Magic Mount"]
-    M --> MM["Metamodule"]
-    M --> NM["NoMount VFS"]
+    K["FinaSU kernel driver"] --> Z["YukiZygisk"]
+    MM["Metamodule you install"] --> NM["module tree publication"]
 
     Z --> ZM["Zygisk modules"]
     Z --> S["Sui"]
@@ -64,11 +58,11 @@ Solid lines in the diagram mean FinaSU provides or drives the capability directl
 
 ### Userspace Engines
 
-**Folk Mount, YukiZygisk and Sui** have their lifecycle managed by `ksud`, with configuration written to `/data/adb/ksu/`. Whether they actually run during a boot depends on that boot's record, not on the switch alone.
+**YukiZygisk and Sui** have their lifecycle managed by `ksud`, with configuration written to `/data/adb/ksu/`. Whether they actually run during a boot depends on that boot's record, not on the switch alone.
 
 - YukiZygisk may stand down at boot in favor of an external Zygisk provider.
 - Sui depends on a working Zygisk backend and is not a Zygisk provider itself.
-- The Folk Mount "provider for this boot" may fall back because the NoMount driver is unavailable or the previous boot was interrupted.
+- Module mounting is done by the metamodule's own `metamount.sh`; without one, modules stay inert and the manager offers no mount mode.
 
 ### Kernel Features
 
@@ -204,9 +198,7 @@ These files are for diagnostics, not manual configuration entry points. Editing 
 
 | Capability | Key Content |
 | --- | --- |
-| [Folk Mount](/en/builtin/folk-mount/) | Five modes, module merging, Metamodule, NoMount fallback and runtime state |
 | [Sui](/en/builtin/sui/) | Payload, boot lifecycle, Manager identity, permissions, background notifications and full troubleshooting |
-| [NoMount](/en/builtin/nomount/) | VFS driver, rule injection, exception UIDs, hot injection and fallback boundaries |
 | [SUSFS](/en/builtin/susfs/) | Kernel source integration, SUSFS-LKM, feature gaps and usage boundaries |
 
 :::

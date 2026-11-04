@@ -19,11 +19,9 @@ import me.weishu.kernelsu.data.repository.SettingsRepository
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.getKernelVersion
 import me.weishu.kernelsu.ksuApp
-import me.weishu.kernelsu.ui.screen.home.HomeMount
 import me.weishu.kernelsu.ui.screen.home.HomeUiState
 import me.weishu.kernelsu.ui.screen.home.SystemInfo
 import me.weishu.kernelsu.ui.screen.home.getManagerVersion
-import me.weishu.kernelsu.ui.screen.home.resolveHomeMountProvider
 import me.weishu.kernelsu.ui.util.CapabilityRepository
 import me.weishu.kernelsu.ui.util.RootShellStatus
 import me.weishu.kernelsu.ui.util.checkNewVersion
@@ -53,7 +51,6 @@ class HomeViewModel(
     private val susfsRepository = me.weishu.kernelsu.data.susfs.SusfsRepository()
     private var susfsToken = 0L
     private var zygiskToken = 0L
-    private var mountToken = 0L
 
     init {
         viewModelScope.launch {
@@ -64,16 +61,13 @@ class HomeViewModel(
                 if (status == RootShellStatus.Ready) {
                     refreshSusfs()
                     refreshZygisk()
-                    refreshMount()
                 } else {
                     susfsToken++
                     zygiskToken++
-                    mountToken++
                     _uiState.update {
                         it.copy(
                             susfs = me.weishu.kernelsu.data.susfs.SusfsStatus(protocol = "root_unavailable"),
                             zygiskProvider = null,
-                            mount = HomeMount(),
                         )
                     }
                 }
@@ -102,7 +96,6 @@ class HomeViewModel(
     fun refresh() {
         refreshSusfs()
         refreshZygisk()
-        refreshMount()
         // Guard against overlapping refreshes: a slower, older build must not overwrite a newer
         // snapshot (or clobber the capability collector's root update).
         val token = ++refreshToken
@@ -116,7 +109,6 @@ class HomeViewModel(
                 baseState.copy(
                     susfs = it.susfs,
                     zygiskProvider = it.zygiskProvider,
-                    mount = it.mount,
                     isRootAvailable = capability.rootStatus == RootShellStatus.Ready,
                     rootStatus = capability.rootStatus,
                 )
@@ -158,30 +150,6 @@ class HomeViewModel(
                 null
             }
             if (request == zygiskToken) _uiState.update { it.copy(zygiskProvider = provider) }
-        }
-    }
-
-    /**
-     * Resolves the provider that actually mounted modules this boot. A read failure, or a record
-     * that cannot name one, hides the row rather than guessing.
-     */
-    fun refreshMount() {
-        val request = ++mountToken
-        val generation = me.weishu.kernelsu.ui.util.RootShell.generation.value
-        viewModelScope.launch {
-            val status = settingsRepo.getFolkMountStatus().getOrNull()
-            if (request == mountToken &&
-                generation == me.weishu.kernelsu.ui.util.RootShell.generation.value
-            ) {
-                _uiState.update {
-                    it.copy(
-                        mount = HomeMount(
-                            provider = resolveHomeMountProvider(status),
-                            metamoduleId = status?.metamoduleId,
-                        )
-                    )
-                }
-            }
         }
     }
 

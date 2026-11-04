@@ -327,11 +327,6 @@ export const docsSidebar: ThemeSidebarItem[] = [
         icon: 'ri:apps-2-line',
       },
       {
-        text: 'Folk Mount',
-        link: '/builtin/folk-mount/',
-        icon: 'ri:hard-drive-3-line',
-      },
-      {
         text: 'YukiZygisk',
         link: '/builtin/yukizygisk/',
         icon: 'ri:apps-2-line',
@@ -341,12 +336,6 @@ export const docsSidebar: ThemeSidebarItem[] = [
         link: '/builtin/sui/',
         icon: 'ri:water-flash-line',
         badge: { text: '需 Zygisk', type: 'warning' },
-      },
-      {
-        text: 'NoMount',
-        link: '/builtin/nomount/',
-        icon: 'ri:folder-forbid-line',
-        badge: { text: '进阶', type: 'info' },
       },
       {
         text: 'SUSFS',
@@ -839,11 +828,6 @@ export const enDocsSidebar: ThemeSidebarItem[] = [
         icon: 'ri:apps-2-line',
       },
       {
-        text: 'Folk Mount',
-        link: '/en/builtin/folk-mount/',
-        icon: 'ri:hard-drive-3-line',
-      },
-      {
         text: 'YukiZygisk',
         link: '/en/builtin/yukizygisk/',
         icon: 'ri:apps-2-line',
@@ -853,12 +837,6 @@ export const enDocsSidebar: ThemeSidebarItem[] = [
         link: '/en/builtin/sui/',
         icon: 'ri:water-flash-line',
         badge: { text: 'Requires Zygisk', type: 'warning' },
-      },
-      {
-        text: 'NoMount',
-        link: '/en/builtin/nomount/',
-        icon: 'ri:folder-forbid-line',
-        badge: { text: 'Advanced', type: 'info' },
       },
       {
         text: 'SUSFS',

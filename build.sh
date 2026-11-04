@@ -158,42 +158,6 @@ build_lkm() {
     done
 }
 
-# NoMount's kernel module is vendored at userspace/nomount (GPL-2.0-only, see
-# userspace/nomount/UPSTREAM.md) and built out-of-tree with the same DDK matrix
-# as kernelsu.ko. The stripped module is staged into ksud's embedded assets as
-# <kmi>_nomount.ko; it is never flashed and has no standalone module zip.
-build_nomount() {
-    have docker || die "docker is required to build the NoMount LKM"
-    mkdir -p userspace/ksud/bin/aarch64 userspace/nomount/build
-
-    local kmi image rel dest
-    for kmi in $KMIS; do
-        image="ghcr.io/ylarod/ddk-min:${kmi}-${DDK_RELEASE}"
-        log "building NoMount LKM for $kmi ($image)"
-        docker image inspect "$image" >/dev/null 2>&1 || docker pull "$image"
-
-        # The container sees the repository mounted at /build, so the output
-        # path has to be given in container coordinates.
-        rel="userspace/nomount/build/${kmi}_nomount.ko"
-        dest="$REPO_ROOT/$rel"
-        rm -f "$dest"
-        docker run --rm --privileged \
-            -v "$REPO_ROOT":/build \
-            -e CONFIG_NOMOUNT=m -e CC=clang -e NOMOUNT_OUT="/build/$rel" \
-            "$image" sh /build/userspace/nomount/build-lkm.sh
-
-        [[ -f "$dest" ]] || die "NoMount LKM for $kmi was not produced"
-        cp "$dest" userspace/ksud/bin/aarch64/
-        log "staged userspace/ksud/bin/aarch64/${kmi}_nomount.ko"
-
-        # The container runs as root, so hand the artifacts back to us.
-        docker run --rm -v "$REPO_ROOT/userspace/nomount":/n \
-            --entrypoint /bin/sh "$image" \
-            -c "chown -R $(id -u):$(id -g) /n" >/dev/null 2>&1 || \
-            warn "could not restore ownership of userspace/nomount/ (artifacts may be root-owned)"
-    done
-}
-
 abi_to_triple() {
     case "$1" in
         arm64-v8a)   echo aarch64-linux-android ;;
@@ -310,13 +274,11 @@ usage: ./build.sh <step> [step...]
 steps:
   lkm      build the kernel module(s) via the DDK docker image, stage them
            into userspace/ksud/bin/aarch64/ so ksud embeds them
-  nomount  build the vendored NoMount module(s) the same way, stage them as
-           userspace/ksud/bin/aarch64/<kmi>_nomount.ko for ksud to embed
   ksuinit  cross-compile the ksuinit helper ksud embeds (needed by boot-patch)
   ksud     cross-compile the ksud daemon with cargo-ndk
   apk      gradle assembleRelease (signed with manager/keystore.properties)
   repack   inject the freshly built ksud into the APK and re-sign it
-  all      lkm -> nomount -> ksuinit -> ksud -> apk -> repack
+  all      lkm -> ksuinit -> ksud -> apk -> repack
 
 environment overrides:
   KMIS=android14-6.1        kernel modules to build (the only supported series)
@@ -336,12 +298,11 @@ main() {
     for step in "$@"; do
         case "$step" in
             lkm)     build_lkm ;;
-            nomount) build_nomount ;;
                 ksuinit) build_ksuinit ;;
             ksud)    build_ksud ;;
             apk)     build_apk ;;
             repack)  build_repack ;;
-            all)     build_lkm; build_nomount; build_ksuinit; build_ksud; build_apk; build_repack ;;
+            all)     build_lkm; build_ksuinit; build_ksud; build_apk; build_repack ;;
             -h|--help|help) usage ;;
             *) die "unknown step: $step (try --help)" ;;
         esac

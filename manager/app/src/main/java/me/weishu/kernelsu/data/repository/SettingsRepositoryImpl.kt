@@ -10,10 +10,7 @@ import com.topjohnwu.superuser.ShellUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.Natives
-import me.weishu.kernelsu.data.model.FolkMountMode
-import me.weishu.kernelsu.data.model.FolkMountStatus
 import me.weishu.kernelsu.data.model.HomeLayoutStyle
-import me.weishu.kernelsu.data.model.NomountStatus
 import me.weishu.kernelsu.data.bootprops.BootPropsInstaller
 import me.weishu.kernelsu.data.model.BootPropsStatus
 import me.weishu.kernelsu.data.model.YukiZygiskStatus
@@ -137,10 +134,6 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var hideHomeSusfs: Boolean
         get() = prefs.getBoolean("hide_home_susfs", false)
         set(value) = prefs.edit { putBoolean("hide_home_susfs", value) }
-
-    override var hideHomeMount: Boolean
-        get() = prefs.getBoolean("hide_home_mount", false)
-        set(value) = prefs.edit { putBoolean("hide_home_mount", value) }
 
     override var hideHomeKernelFullVersion: Boolean
         get() = prefs.getBoolean("hide_home_kernel_full_version", false)
@@ -350,31 +343,6 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override fun setSulogEnabled(enabled: Boolean): Boolean = execKsud("feature set sulog ${if (enabled) 1 else 0}", true)
 
-    override suspend fun getFolkMountStatus(): Result<FolkMountStatus> = withContext(Dispatchers.IO) {
-        runCatching {
-            val result = execKsudResult("mount status --json")
-            check(result.isSuccess) { "ksud mount status failed (exit ${result.code})" }
-            val payload = result.out.firstOrNull { it.isNotBlank() }
-                ?: error("ksud mount status returned no payload")
-            val json = JSONObject(payload)
-            val schema = json.optInt("schema_version", -1)
-            check(schema == FolkMountStatus.SCHEMA_VERSION) {
-                "unsupported folk mount schema_version $schema"
-            }
-            FolkMountStatus.fromJson(json)
-        }
-    }
-
-    override suspend fun setFolkMountMode(mode: FolkMountMode): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            // `mode.token` is a fixed enum value; never interpolate arbitrary input.
-            requireKsud(
-                execKsudResult("mount set-mode ${mode.token}"),
-                "ksud mount set-mode ${mode.token} failed",
-            )
-        }
-    }
-
     override suspend fun getRekernelXStatus(): Result<RekernelXStatus> = withContext(Dispatchers.IO) {
         runCatching { RekernelXInstaller.status() }
     }
@@ -517,16 +485,6 @@ class SettingsRepositoryImpl : SettingsRepository {
             }
         }
 
-    override suspend fun getNomountStatus(): Result<NomountStatus> = withContext(Dispatchers.IO) {
-        runCatching {
-            val result = execKsudResult("nomount status --json")
-            check(result.isSuccess) { "ksud nomount status failed (exit ${result.code})" }
-            val payload = result.out.firstOrNull { it.isNotBlank() }
-                ?: error("ksud nomount status returned no payload")
-            NomountStatus.fromJson(JSONObject(payload))
-        }
-    }
-
     override suspend fun loadFeatureSnapshot(): FeatureSnapshot = withContext(Dispatchers.IO) {
         // One batched round trip: `feature list` reports every status and current value in a
         // single ksud run, and the four config reads and the JSON statuses ride the same job.
@@ -539,9 +497,6 @@ class SettingsRepositoryImpl : SettingsRepository {
                 "feature get --config sulog",
                 "feature get --config adb_root",
                 "feature get --config shell_su_adb_only",
-                "mount status --json",
-                "zygisk status --json",
-                "nomount status --json",
             )
         )
         fun segment(index: Int) = segments.getOrNull(index)
@@ -575,13 +530,6 @@ class SettingsRepositoryImpl : SettingsRepository {
             ?.trim()
             ?.toLongOrNull()
 
-        fun jsonBody(index: Int, command: String): Result<JSONObject> = runCatching {
-            val segment = segment(index) ?: error("ksud $command produced no output")
-            check(segment.isSuccess) { "ksud $command failed (exit ${segment.code})" }
-            segment.out.firstOrNull { it.isNotBlank() }
-                ?: error("ksud $command returned no payload")
-        }.mapCatching { JSONObject(it) }
-
         FeatureSnapshot(
             statuses = statuses,
             values = values,
@@ -591,71 +539,7 @@ class SettingsRepositoryImpl : SettingsRepository {
                 "adb_root" to persisted(3),
                 "shell_su_adb_only" to persisted(4),
             ),
-            folkMount = jsonBody(5, "mount status").mapCatching { json ->
-                val schema = json.optInt("schema_version", -1)
-                check(schema == FolkMountStatus.SCHEMA_VERSION) {
-                    "unsupported folk mount schema_version $schema"
-                }
-                FolkMountStatus.fromJson(json)
-            },
-            nomount = jsonBody(7, "nomount status").mapCatching { NomountStatus.fromJson(it) },
         )
-    }
-
-    override suspend fun setNomountIsolated(enabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            val state = if (enabled) "on" else "off"
-            check(execKsud("nomount uid isolated $state", true)) {
-                "ksud nomount uid isolated $state failed"
-            }
-        }
-    }
-
-    override suspend fun injectNomountRules(): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            check(execKsud("nomount inject", true)) { "ksud nomount inject failed" }
-        }
-    }
-
-    override suspend fun clearNomountRules(): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            check(execKsud("nomount clear", true)) { "ksud nomount clear failed" }
-        }
-    }
-
-    override suspend fun clearNomountEverything(): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            // Rules first, then the exclusions: if a step fails, the failure is
-            // reported instead of leaving a half-cleared state looking done.
-            check(execKsud("nomount clear", true)) { "ksud nomount clear failed" }
-            check(execKsud("nomount uid set", true)) { "ksud nomount uid set failed" }
-        }
-    }
-
-    override suspend fun setNomountUids(uids: List<Int>): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            // UIDs are integers from the app list; nothing user-typed reaches the shell.
-            val list = uids.distinct().sorted().joinToString(" ")
-            // An empty list clears every exclusion.
-            val command = if (list.isEmpty()) "nomount uid set" else "nomount uid set $list"
-            check(execKsud(command, true)) { "ksud nomount uid set failed" }
-        }
-    }
-
-    override suspend fun hotLoadNomountModule(id: String): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            check(execKsud("nomount hot-load ${shellQuote(id)}", true)) {
-                "ksud nomount hot-load failed"
-            }
-        }
-    }
-
-    override suspend fun hotUnloadNomountModule(id: String): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            check(execKsud("nomount hot-unload ${shellQuote(id)}", true)) {
-                "ksud nomount hot-unload failed"
-            }
-        }
     }
 
     override suspend fun setModuleSkip(id: String, skip: Boolean): Result<Unit> = withContext(Dispatchers.IO) {

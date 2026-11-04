@@ -2,15 +2,12 @@ package me.weishu.kernelsu.ui.screen.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -18,9 +15,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.weishu.kernelsu.KernelSUApplication
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.data.model.FolkMountMode
-import me.weishu.kernelsu.ui.component.dialog.ConfirmResult
-import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.navigation3.Navigator
 import me.weishu.kernelsu.ui.navigation3.Route
 import me.weishu.kernelsu.ui.viewmodel.SettingsViewModel
@@ -58,26 +52,7 @@ fun rememberSettingsActions(
     viewModel: SettingsViewModel,
 ): SettingsScreenActions {
     val context = LocalContext.current
-    val resources = LocalResources.current
     val activity = LocalActivity.current
-    val scope = rememberCoroutineScope()
-    val confirm = rememberConfirmDialog()
-    // Switching to NoMount changes who can see the injected files, so confirm it
-    // once with the difference spelled out instead of changing it silently.
-    val onSetFolkMountMode: (FolkMountMode) -> Unit = { mode ->
-        if (mode == FolkMountMode.NOMOUNT) {
-            scope.launch {
-                val result = confirm.awaitConfirm(
-                    title = resources.getString(R.string.settings_folk_mount_mode_nomount),
-                    content = resources.getString(R.string.settings_folk_mount_nomount_confirm),
-                    confirm = resources.getString(R.string.settings_folk_mount_nomount_confirm_ok),
-                )
-                if (result is ConfirmResult.Confirmed) viewModel.setFolkMountMode(mode)
-            }
-        } else {
-            viewModel.setFolkMountMode(mode)
-        }
-    }
     return SettingsScreenActions(
         onSetCheckUpdate = viewModel::setCheckUpdate,
         onSetCheckModuleUpdate = viewModel::setCheckModuleUpdate,
@@ -91,8 +66,6 @@ fun rememberSettingsActions(
         onSetSELinuxMode = viewModel::setSELinuxMode,
         onSetSulogEnabled = viewModel::setSulogEnabled,
         onSetAvcSpoofEnabled = viewModel::setAvcSpoofEnabled,
-        onSetFolkMountMode = onSetFolkMountMode,
-        onOpenNomount = { navigator.push(Route.Nomount) },
         onOpenTeesim = { navigator.push(Route.Teesim) },
         onSetRekernelXEnabled = viewModel::setRekernelXEnabled,
         onSetBootPropsEnabled = viewModel::setBootPropsEnabled,
@@ -104,7 +77,6 @@ fun rememberSettingsActions(
         onSetHideHomeFingerprint = viewModel::setHideHomeFingerprint,
         onSetHideHomeZygisk = viewModel::setHideHomeZygisk,
         onSetHideHomeSusfs = viewModel::setHideHomeSusfs,
-        onSetHideHomeMount = viewModel::setHideHomeMount,
         onSetHideHomeKernelFullVersion = viewModel::setHideHomeKernelFullVersion,
         onSetEnableNavigationBadge = viewModel::setEnableNavigationBadge,
         onSetEnablePredictiveBack = { enabled ->

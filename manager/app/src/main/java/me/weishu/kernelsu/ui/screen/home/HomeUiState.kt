@@ -2,26 +2,8 @@ package me.weishu.kernelsu.ui.screen.home
 
 import androidx.compose.runtime.Immutable
 import me.weishu.kernelsu.KernelVersion
-import me.weishu.kernelsu.data.model.FolkMountProvider
-import me.weishu.kernelsu.data.model.FolkMountStatus
 import me.weishu.kernelsu.ui.util.RootShellStatus
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
-
-/** The installed metamodule, named by its module entry when the module list has loaded. */
-@Immutable
-data class HomeMetamodule(
-    val id: String,
-    val name: String,
-    val version: String,
-)
-
-/** The provider that actually mounted modules this boot; a null provider hides the row. */
-@Immutable
-data class HomeMount(
-    val provider: FolkMountProvider? = null,
-    val metamoduleId: String? = null,
-    val metamodule: HomeMetamodule? = null,
-)
 
 @Immutable
 data class HomeUiState(
@@ -47,8 +29,6 @@ data class HomeUiState(
     val susfs: me.weishu.kernelsu.data.susfs.SusfsStatus = me.weishu.kernelsu.data.susfs.SusfsStatus(),
     /** The active Zygisk implementation ("Built-In" or a provider's name); null hides the row. */
     val zygiskProvider: String? = null,
-    /** The provider that really mounted modules this boot; a null provider hides the row. */
-    val mount: HomeMount = HomeMount(),
 ) {
     val isSELinuxPermissive: Boolean
         get() = systemInfo.selinuxStatus == "Permissive"
@@ -106,13 +86,3 @@ data class HomeActions(
     fun openManagerReleases() = onOpenUrl("https://github.com/LyraVoid/FinaSU/releases")
 }
 
-/**
- * The provider that really ran this boot. The runtime record already reflects a NoMount
- * fallback to the built-in engine; the configured provider only predicts the next boot,
- * so use it only when this boot has no record yet.
- */
-internal fun resolveHomeMountProvider(status: FolkMountStatus?): FolkMountProvider? {
-    status ?: return null
-    if (status.bootResult == "skipped") return FolkMountProvider.NONE
-    return status.bootProvider ?: status.nextProvider
-}

@@ -1,8 +1,5 @@
 package me.weishu.kernelsu.data.repository
 
-import me.weishu.kernelsu.data.model.FolkMountMode
-import me.weishu.kernelsu.data.model.FolkMountStatus
-import me.weishu.kernelsu.data.model.NomountStatus
 import me.weishu.kernelsu.data.model.BootPropsStatus
 import me.weishu.kernelsu.data.model.YukiZygiskStatus
 import me.weishu.kernelsu.data.model.RekernelXStatus
@@ -23,8 +20,6 @@ data class FeatureSnapshot(
     val statuses: Map<String, String>,
     val values: Map<String, Long?>,
     val persists: Map<String, Long?>,
-    val folkMount: Result<FolkMountStatus>,
-    val nomount: Result<NomountStatus>,
 )
 
 interface SettingsRepository {
@@ -41,7 +36,6 @@ interface SettingsRepository {
     var hideHomeFingerprint: Boolean
     var hideHomeZygisk: Boolean
     var hideHomeSusfs: Boolean
-    var hideHomeMount: Boolean
     var hideHomeKernelFullVersion: Boolean
     var enablePredictiveBack: Boolean
     var enableNavigationBadge: Boolean
@@ -112,8 +106,6 @@ interface SettingsRepository {
     suspend fun getYukiZygiskStatus(): Result<YukiZygiskStatus>
     fun setSulogEnabled(enabled: Boolean): Boolean
 
-    suspend fun getFolkMountStatus(): Result<FolkMountStatus>
-    suspend fun setFolkMountMode(mode: FolkMountMode): Result<Unit>
     suspend fun getRekernelXStatus(): Result<RekernelXStatus>
     suspend fun setRekernelXEnabled(enabled: Boolean): Result<Unit>
     suspend fun getBootPropsStatus(): Result<BootPropsStatus>
@@ -141,14 +133,6 @@ interface SettingsRepository {
     /** Replaces `pif.prop` with the content the user picked, base64 encoded. */
     suspend fun importPifProp(base64: String): Result<Unit>
     suspend fun setPifOption(option: PifOption, value: Boolean): Result<Unit>
-    suspend fun getNomountStatus(): Result<NomountStatus>
-    suspend fun setNomountIsolated(enabled: Boolean): Result<Unit>
-    suspend fun injectNomountRules(): Result<Unit>
-    suspend fun clearNomountRules(): Result<Unit>
-    suspend fun clearNomountEverything(): Result<Unit>
-    suspend fun setNomountUids(uids: List<Int>): Result<Unit>
-    suspend fun hotLoadNomountModule(id: String): Result<Unit>
-    suspend fun hotUnloadNomountModule(id: String): Result<Unit>
     suspend fun setModuleSkip(id: String, skip: Boolean): Result<Unit>
 
     suspend fun getAdbRootStatus(): String
@@ -166,9 +150,9 @@ interface SettingsRepository {
     fun isLkmMode(): Boolean
 
     /**
-     * Reads every feature status/value, the persisted feature config and the mount, Zygisk
-     * and NoMount statuses in a single batched shell round trip. A cold post-reboot
-     * settings open pays one command burst instead of one exec round trip per probe.
+     * Reads every feature status/value and the persisted feature config in a single batched
+     * shell round trip. A cold post-reboot settings open pays one command burst instead of one
+     * exec round trip per probe.
      */
     suspend fun loadFeatureSnapshot(): FeatureSnapshot
 

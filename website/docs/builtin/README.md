@@ -18,7 +18,7 @@ copyright:
 
 ::: warning “内置能力”不等于 Built-In 安装方案
 
-这里的“内置”描述的是功能随 FinaSU 提供。它与安装文章中的 [Built-In 内核构建方案](/guide/install/built-in/) 不是同一个概念。LKM 安装同样可以使用 Folk Mount、YukiZygisk、Sui。
+这里的“内置”描述的是功能随 FinaSU 提供。它与安装文章中的 [Built-In 内核构建方案](/guide/install/built-in/) 不是同一个概念。LKM 安装同样可以使用 YukiZygisk 与 Sui；模块挂载则由你安装的元模块负责。
 
 :::
 
@@ -28,26 +28,20 @@ copyright:
 
 | 我想解决的问题 | 使用 | 先检查什么 | 生效时机 |
 | --- | --- | --- | --- |
-| 让 Magisk 风格模块出现在系统路径中 | [Folk Mount](/builtin/folk-mount/) | 当前挂载模式、模块目录 | 通常下次启动 |
 | 运行 Zygisk 模块 | YukiZygisk | 内核模块是否包含注入运行时 | 下次启动 |
 | 给兼容 Shizuku API 的应用提供 Root 或 Shell | [Sui](/builtin/sui/) | FinaSU 驱动、Zygisk 后端、Sui 载荷 | 启用后通常重启 |
-| 不建立传统挂载记录就注入模块 | [NoMount](/builtin/nomount/) | VFS 驱动状态、当前 KMI、挂载模式 | 启动注入，规则可热操作 |
 | 使用已有 SUSFS 隐藏能力 | [SUSFS](/builtin/susfs/) | 内核源码集成或已加载的 SUSFS-LKM | 取决于当前实现 |
 
 :::
 
 ## 它们如何协作
 
-这些能力不是一条线性的功能列表。Folk Mount 与 NoMount 解决模块文件怎样被看到；YukiZygisk 由内核辅助向应用进程注入代码；Sui 再借助 Zygisk 提供 Shizuku API 后端。SUSFS 则取决于内核源码集成或已加载的 SUSFS-LKM。
+这些能力不是一条线性的功能列表。模块文件怎样被看到由你安装的元模块决定，FinaSU 不再内置挂载引擎；YukiZygisk 由内核辅助向应用进程注入代码；Sui 再借助 Zygisk 提供 Shizuku API 后端。SUSFS 则取决于内核源码集成或已加载的 SUSFS-LKM。
 
 ```mermaid
 flowchart TD
-    K["FinaSU 内核驱动"] --> M["Folk Mount"]
-    K --> Z["YukiZygisk"]
-
-    M --> B["内置 Magic Mount"]
-    M --> MM["Metamodule"]
-    M --> NM["NoMount VFS"]
+    K["FinaSU 内核驱动"] --> Z["YukiZygisk"]
+    MM["你安装的 Metamodule"] --> NM["模块目录发布"]
 
     Z --> ZM["Zygisk 模块"]
     Z --> S["Sui"]
@@ -64,11 +58,11 @@ flowchart TD
 
 ### 用户态引擎
 
-**Folk Mount、YukiZygisk、Sui** 由 `ksud` 管理生命周期，配置写入 `/data/adb/ksu/`。启动阶段是否真正运行，要看本次启动记录，而不是只看开关。
+**YukiZygisk、Sui** 由 `ksud` 管理生命周期，配置写入 `/data/adb/ksu/`。启动阶段是否真正运行，要看本次启动记录，而不是只看开关。
 
 - YukiZygisk 可能在启动时让位给外部 Zygisk 提供者。
 - Sui 依赖可用的 Zygisk 后端，自身不是 Zygisk 提供者。
-- Folk Mount 的“本次启动提供者”可能因 NoMount 驱动不可用或上次启动中断而回退。
+- 模块挂载由元模块自己的 `metamount.sh` 完成；没装元模块时模块不生效，管理器不再提供挂载模式。
 
 ### 内核功能
 
@@ -83,7 +77,7 @@ flowchart TD
 
 ::: field 下次启动配置
 @type `持久设置`
-例如 Folk Mount 模式和 Sui 启用意图。写入磁盘后仍然需要重新启动相关组件或设备。
+例如 Sui 启用意图。写入磁盘后仍然需要重新启动相关组件或设备。
 :::
 
 ::: field 本次启动状态
@@ -93,7 +87,7 @@ flowchart TD
 
 ::: field 即时规则
 @type `热更新`
-NoMount 的模块规则与例外通常可以在当前启动内更新。已有进程仍可能保留旧状态。
+元模块发布出来的模块目录通常可以在当前启动内更新。已有进程仍可能保留旧状态。
 :::
 
 ::: field 新进程生效
@@ -118,11 +112,11 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 2. **一次只启用一项能力**
 
-   先完成依赖链的底层部分：例如先确认 Zygisk 实际注入，再启用 Sui。不要同时更换 Folk Mount 后端、Zygisk 提供者和应用策略。
+   先完成依赖链的底层部分：例如先确认 Zygisk 实际注入，再启用 Sui。不要同时更换元模块、Zygisk 提供者和应用策略。
 
 3. **检查是否需要重启**
 
-   YukiZygisk、Sui 以及 Folk Mount 模式通常需要重启才进入新状态。
+   YukiZygisk 与 Sui 通常需要重启才进入新状态。
 
 4. **用目标应用验证**
 
@@ -152,15 +146,12 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 ```file-tree title="/data/adb/ksu 内置能力相关位置"
 /data/adb/ksu
-├── mount_mode                  # Folk Mount 下次启动模式
-├── mount_runtime               # 本次启动提供者与结果
-├── mount_log                   # Folk Mount 运行日志
+├── module_mount_boot            # 本次启动是否已跑过元模块的 metamount.sh
+├── module_mount.lock            # 冷启动与 late-load 之间的互斥锁
 ├── yukizygisk/yzconfig.json    # YukiZygisk 设置（注入开关在页面顶部）
 ├── zygisk-boot.json            # 启动保护与失败计数
 ├── .zygisk/state.json          # 当前注入状态
 ├── sui/                        # Sui 状态与守护进程记录
-├── nomount_runtime             # NoMount 最近一次注入结果
-├── nomount_uids                # NoMount 例外 UID
 └── folksu-susfs/               # SUSFS 对接配置与状态
 ```
 
@@ -172,7 +163,7 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 1. **看依赖**
 
-   Sui 先看 Zygisk；NoMount 先看驱动和挂载模式。
+   Sui 先看 Zygisk；模块不生效先看有没有装元模块。
 
 2. **看启动代次**
 
@@ -180,7 +171,7 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 3. **看保护与回退**
 
-   YukiZygisk 在载荷未安装或内核模块过旧时不会注入；Folk Mount 在 NoMount 或元模块阶段异常后会保守回退。先处理警告，不要重复触发。
+   YukiZygisk 在载荷未安装或内核模块过旧时不会注入；模块挂载完全依赖元模块自己的 `metamount.sh`，没装就不注入。先处理警告，不要重复触发。
 
 4. **用目标进程验证**
 
@@ -194,7 +185,7 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 ## 能力边界
 
-- **内置能力不是隐身保证。** NoMount 和 SUSFS 各自只处理一部分可观测面。
+- **内置能力不是隐身保证。** 元模块与 SUSFS 各自只处理一部分可观测面。
 - **Sui 不是无条件 Root。** 应用仍要连接 Sui 并取得逐应用权限。
 - **外部 Zygisk 提供者不由 FinaSU 管理。** FinaSU 可以让位并检测服务，但不会替你验证或修复外部提供者的注入链。
 
@@ -204,9 +195,7 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 | 能力 | 核心内容 |
 | --- | --- |
-| [Folk Mount](/builtin/folk-mount/) | 五种模式、模块合并、元模块、NoMount 回退与运行状态 |
 | [Sui](/builtin/sui/) | 载荷、启动生命周期、管理器身份、权限、后台通知与完整排错 |
-| [NoMount](/builtin/nomount/) | VFS 驱动、规则注入、例外 UID、热注入与回退边界 |
 | [SUSFS](/builtin/susfs/) | 内核源码集成、SUSFS-LKM、功能差距与使用边界 |
 
 :::
@@ -215,7 +204,7 @@ NoMount 的模块规则与例外通常可以在当前启动内更新。已有进
 
 ### 为什么开关开了，功能却没生效？
 
-先检查依赖和本次启动状态。YukiZygisk、Sui、Folk Mount 模式都需要新启动周期。
+先检查依赖和本次启动状态。YukiZygisk、Sui 都需要新启动周期。
 
 ### 多个内置能力可以同时使用吗？
 

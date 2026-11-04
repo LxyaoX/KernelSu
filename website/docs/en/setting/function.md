@@ -145,66 +145,6 @@ For enabling Sui, payload installation, dual daemons, manager registration, perm
 
 :::
 
-## Folk Mount
-
-Folk Mount decides who injects module files into the system at boot. Changing the mode usually requires a reboot, and the summary shows both the "configured mode" and the "provider actually used this boot".
-
-::: table Five modes
-
-| Mode | Behavior | Best for |
-| --- | --- | --- |
-| **Automatic** | Hands over to a Metamodule when one is available, otherwise uses the built-in Magic Mount | Most users |
-| **Built-in (Magic Mount)** | Always uses the built-in Folk Mount | Fixing on the built-in mount engine |
-| **Metamodule only** | Always hands over to the Metamodule | Already committed to a particular mount module |
-| **Built-in (VFS)** | Uses the NoMount VFS driver; falls back to the built-in engine when the driver is unavailable | Needing NoMount's path-level injection |
-| **Mounting off** | Injects no module content | Temporarily troubleshooting module problems |
-
-:::
-
-::: warning NoMount has a different default visibility
-
-After switching to VFS, NoMount initially lets every app see injected files; the built-in Magic Mount hides them from non-Root apps according to App Profile by default. To keep the old behavior, go to "NoMount → Exception apps" before rebooting and select the apps that should see the stock file system.
-
-:::
-
-::: tip This boot and the next boot
-
-The mode dropdown is the configuration for the next boot; only the "this boot" row shows the provider currently in use. It is normal for the two to differ, and they match after a reboot.
-
-:::
-
-See [Folk Mount](/en/builtin/folk-mount/).
-
-## NoMount
-
-The NoMount page shows the VFS driver, injection rules, module contributions and exception apps.
-
-### Driver
-
-The state may be:
-
-- **Ready**: the driver responds and the injection and visibility settings are available.
-- **Unavailable**: the driver is not loaded, or the current package lacks the module for this KMI.
-- **Version mismatch**: the kernel driver API is too old and the kernel needs an upgrade.
-- **Taken over by another module**: another module manages a driver with the same name, so the built-in backend steps aside.
-
-### Injection
-
-- **Redirect rules**: shows the number of active rules and the expected number.
-- **Reinject**: writes the current module rules to the driver again.
-- **Clear rules**: stops injecting module files until the next reboot.
-- The module list can inject a module immediately or take it down until the next reboot.
-
-### Visibility
-
-NoMount's default model is "every app can see injected files". Apps selected under "Exception apps" see the stock file system.
-
-- Apps that share a UID are affected together.
-- You can copy the apps with "Unmount modules" from App Profile, but the copy does not follow later Profile changes.
-- "Clear all" deletes the rules and exceptions until the next boot.
-
-See [NoMount](/en/builtin/nomount/).
-
 ## Recommended Troubleshooting Order
 
 :::: steps
@@ -264,8 +204,6 @@ No. Installed modules are not deleted. It only stops injecting module content du
 
 - [Root & Mount Policy](/en/setting/root-policy/)
 - [YukiZygisk](/en/builtin/yukizygisk/)
-- [Folk Mount](/en/builtin/folk-mount/)
-- [NoMount](/en/builtin/nomount/)
 - [Sui Guide](/en/builtin/sui/)
 - [SUSFS](/en/builtin/susfs/)
 - [SU Log](/en/manager/su-log/)

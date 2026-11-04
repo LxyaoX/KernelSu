@@ -384,6 +384,5 @@ adb shell su -c 'ksud module skip example_module --off'
 ## 相关页面
 
 - [模块配置](/developer/module-config/)：持久与临时配置的 CLI 和限制。
-- [Folk Mount](/builtin/folk-mount/)：模块文件由哪个挂载后端发布。
 - [YukiZygisk](/builtin/yukizygisk/)：Zygisk 模块依赖的注入提供者。
 - [受管内核模块](/manager/kernel-module/)：与标准模块不同的 `.ko` 加载路径。

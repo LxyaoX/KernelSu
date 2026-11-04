@@ -47,7 +47,6 @@ flowchart TD
 | 模块开关保存了但文件或脚本没生效 | 本次启动、挂载提供者、脚本、安全模式 | 本页 |
 | Zygisk 状态异常 | 外部提供者、ABI、注入回执、启动保护 | [YukiZygisk](/builtin/yukizygisk/) |
 | Sui 不可用 | Zygisk 后端、Sui 状态、应用权限 | [Sui](/builtin/sui/) |
-| NoMount 回退或规则为 0 | 驱动、KMI 资产、例外 UID、模块贡献 | [NoMount](/builtin/nomount/) |
 | 内置能力显示不支持 | 内核特性、配置、外部提供者 | [内置能力总览](/builtin/) |
 | 导入 `.ko` 失败或没有加载 | 架构、vermagic、依赖、状态记录 | [内核模块](/manager/kernel-module/) |
 
@@ -141,7 +140,7 @@ flowchart TD
     E -->|脚本或阶段失败| G["警告 / 保守回退"]
 ```
 
-页面显示回退时，先阅读警告和[Folk Mount](/builtin/folk-mount/)说明。配置仍可能写着 NoMount，但这次由内置引擎完成挂载；这不表示设置没有保存，而是本次启动的降级结果。
+页面显示回退时，先阅读警告和Folk Mount说明。配置仍可能写着 NoMount，但这次由内置引擎完成挂载；这不表示设置没有保存，而是本次启动的降级结果。
 
 NoMount 驱动加载成功还需要 API 探测通过。加载调用返回、`/proc/modules` 出现名字，都不等于驱动能接收规则。详细状态可用：
 
@@ -248,7 +247,5 @@ ls -l /data/adb/ksud /data/adb/ksu/log
 - [设备兼容性](/troubleshoot/compatibility/)：KMI、ABI 和能力门控。
 - [管理器认证失败](/troubleshoot/manager-auth/)：签名与 UAPI 身份层。
 - [Root 授权请求不出现](/troubleshoot/root-request/)：应用授权和 Shell 来源。
-- [Folk Mount](/builtin/folk-mount/)：提供者选择与回退。
-- [NoMount](/builtin/nomount/)：驱动、规则和例外 UID。
 - [YukiZygisk](/builtin/yukizygisk/)：注入状态与启动保护。
 - [Sui](/builtin/sui/)：Zygisk 依赖、权限和服务状态。

@@ -144,66 +144,6 @@ Sui 的启用、载荷安装、双守护进程、管理器登记、权限和排�
 
 :::
 
-## Folk Mount
-
-Folk Mount 决定启动时由谁把模块文件注入系统。模式修改后通常需要重启，摘要会同时显示“配置模式”和“本次启动实际提供者”。
-
-::: table 五种模式
-
-| 模式 | 行为 | 适合 |
-| --- | --- | --- |
-| **自动** | 有可用 metamodule 时交给 metamodule，否则使用内置 Magic Mount | 大多数用户 |
-| **Built-in (Magic Mount)** | 始终使用内置 Folk Mount | 固定使用内置挂载引擎 |
-| **仅 metamodule** | 始终交给 metamodule | 已明确使用某个悬挂模块 |
-| **Built-in (VFS)** | 使用 NoMount VFS 驱动；驱动不可用时回退到内置引擎 | 需要 NoMount 的路径级注入方式 |
-| **关闭挂载** | 不注入任何模块内容 | 临时排查模块问题 |
-
-:::
-
-::: warning NoMount 的默认可见性不同
-
-切换到 VFS 后，NoMount 初始会让所有应用看到注入文件；内置 Magic Mount 默认会按 App Profile 对非 Root 应用隐藏。要保留旧行为，重启前到“NoMount → 例外应用”选择需要看到原厂文件系统的应用。
-
-:::
-
-::: tip 本次启动和下次启动
-
-模式下拉框是下次启动配置；“本次启动”行才是当前正在使用的提供者。两者不同是正常的，重启后才一致。
-
-:::
-
-详见 [Folk Mount](/builtin/folk-mount/)。
-
-## NoMount
-
-NoMount 页面显示 VFS 驱动、注入规则、模块贡献和例外应用。
-
-### 驱动
-
-状态可能是：
-
-- **就绪**：驱动响应，可以使用注入与可见性设置。
-- **不可用**：驱动未加载或当前安装包缺少对应 KMI 的模块。
-- **版本不匹配**：内核驱动 API 过旧，需要升级内核。
-- **由其它模块接管**：同名驱动由另一个模块管理，内置后端主动让位。
-
-### 注入
-
-- **重定向规则**：显示已生效规则数与预期规则数。
-- **重新注入**：让当前模块规则重新写入驱动。
-- **清空规则**：重启前不再注入模块文件。
-- 模块列表可以立即注入某个模块，或把它撤下直到下次重启。
-
-### 可见性
-
-NoMount 的默认模型是“所有应用都能看到注入文件”。在“例外应用”中选中的应用会看到原厂文件系统。
-
-- 共享 UID 的应用会一起受到影响。
-- 可以从 App Profile 复制“卸载模块”的应用，但复制后不会自动跟随 Profile 后续变化。
-- “清空全部”会删除规则和例外，直到下次重启。
-
-详见 [NoMount](/builtin/nomount/)。
-
 ## 推荐排查顺序
 
 :::: steps
@@ -263,8 +203,6 @@ NoMount 初始没有例外应用。需要隐藏时，在“NoMount → 例外应
 
 - [Root 与挂载策略](/setting/root-policy/)
 - [YukiZygisk](/builtin/yukizygisk/)
-- [Folk Mount](/builtin/folk-mount/)
-- [NoMount](/builtin/nomount/)
 - [Sui 使用指南](/builtin/sui/)
 - [SUSFS](/builtin/susfs/)
 - [SU 日志](/manager/su-log/)

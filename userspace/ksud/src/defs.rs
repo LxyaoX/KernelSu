@@ -70,37 +70,12 @@ mod android {
     pub const METAMODULE_METAINSTALL_SCRIPT: &str = "metainstall.sh";
     pub const METAMODULE_METAUNINSTALL_SCRIPT: &str = "metauninstall.sh";
 
-    // Folk Mount (built-in module mounting)
-    pub const FOLK_MOUNT_CONFIG: &str = concatcp!(WORKING_DIR, "mount_mode");
-    // Per-boot runtime record and the concurrency lock for the built-in executor.
-    pub const FOLK_MOUNT_RUNTIME: &str = concatcp!(WORKING_DIR, "mount_runtime");
-    pub const FOLK_MOUNT_LOCK: &str = concatcp!(WORKING_DIR, "mount.lock");
-
-    // Built-in NoMount backend.
-    /// Per-boot record of the driver state and the injection result.
-    pub const NOMOUNT_RUNTIME: &str = concatcp!(WORKING_DIR, "nomount_runtime");
-    /// UIDs that must see the stock filesystem, one per line. Written by the
-    /// manager from the app profiles and replayed into the kernel on boot.
-    pub const NOMOUNT_UIDS: &str = concatcp!(WORKING_DIR, "nomount_uids");
-    /// Last action that changed NoMount kernel state, for diagnostics.
-    pub const NOMOUNT_LAST_ACTION: &str = concatcp!(WORKING_DIR, "nomount_last_action");
-    /// Written before a step that can wedge the kernel (loading the embedded
-    /// NoMount module, injecting the module tree) and removed once the step is
-    /// known to have finished. Finding an earlier boot's record means that step
-    /// never finished, so the next boot has to skip it.
-    pub const MOUNT_INFLIGHT: &str = concatcp!(WORKING_DIR, "mount_inflight");
-    pub const NOMOUNT_LOAD_INFLIGHT: &str = concatcp!(WORKING_DIR, "nomount_load_inflight");
-    pub const NOMOUNT_LOAD_LOCK: &str = concatcp!(WORKING_DIR, "nomount_load.lock");
-    /// Per-boot mount log, kept small enough to ride along in a bug report.
-    pub const MOUNT_LOG: &str = concatcp!(LOG_DIR, "mount.log");
-    /// Size the mount log may reach before the previous one is rotated aside.
-    pub const MOUNT_LOG_MAX_BYTES: u64 = 256 * 1024;
-    /// Flag file that arms the opt-in capture of a boot that never finished.
-    pub const MOUNT_CAPTURE_FLAG: &str = concatcp!(WORKING_DIR, "mount_capture");
-    /// Where a capture writes what a stuck boot was doing.
-    pub const MOUNT_CAPTURE_LOG: &str = concatcp!(LOG_DIR, "mount_capture.log");
-    /// Size the capture log may reach before the previous one is rotated aside.
-    pub const MOUNT_CAPTURE_LOG_MAX_BYTES: u64 = 512 * 1024;
+    // Module mounting, delegated to the installed metamodule.
+    /// Boot id the metamodule's `metamount.sh` already ran for, so a later stage
+    /// in the same boot does not run it twice.
+    pub const MODULE_MOUNT_MARKER: &str = concatcp!(WORKING_DIR, "module_mount_boot");
+    /// Serialises a cold boot against a late-load.
+    pub const MODULE_MOUNT_LOCK: &str = concatcp!(WORKING_DIR, "module_mount.lock");
 
     pub const KSU_BACKUP_DIR: &str = WORKING_DIR;
     pub const KSU_BACKUP_FILE_PREFIX: &str = "ksu_backup_";

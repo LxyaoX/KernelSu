@@ -759,25 +759,6 @@ fn install_module_to_system(zip: &str) -> Result<String> {
     if is_metamodule {
         info!("Installing metamodule: {module_id}");
 
-        // A metamodule injects on its own through its own scripts. While the
-        // built-in NoMount backend owns injection, installing one would put two
-        // injectors on the same paths.
-        if crate::nomount::owns_injection().unwrap_or(false) {
-            println!("\n❌ Installation Failed");
-            println!("┌────────────────────────────────");
-            println!("│ The built-in NoMount backend is active");
-            println!("│");
-            println!("│ A metamodule injects files on its own, so it and NoMount");
-            println!("│ would both own the same paths.");
-            println!("│");
-            println!("│ To install this metamodule:");
-            println!("│   1. Set the mount mode to off");
-            println!("│   2. Reboot your device");
-            println!("│   3. Install the new metamodule");
-            println!("└─────────────────────────────────\n");
-            bail!("NO_MOUNT_ACTIVE: NoMount owns module injection; switch the mount mode first");
-        }
-
         // Check if there's already a metamodule installed
         if metamodule::has_metamodule()
             && let Some(existing_path) = metamodule::get_metamodule_path()

@@ -44,7 +44,7 @@ FinaSU 提供：
 
 ### KernelSU 模块
 
-标准 KernelSU 模块由管理器管理。模块通过内置的 NoMount VFS 后端注入，不再需要 metamodule；已安装的 metamodule 仍会被识别并列出。
+标准 KernelSU 模块由管理器管理。把模块目录发布进文件系统由用户自己安装的元模块负责；管理器会识别它，并和普通模块一起列出。
 
 ### YukiZygisk
 
@@ -54,17 +54,11 @@ YukiZygisk 是内置的 Zygisk 引擎。注入由 `kernelsu.ko` 内的内核特�
 
 SUSFS 管理按能力开关。仅在支持的内核上显示相关控件，每次配置变更都会附带应用回执。
 
-### Folk-Mount
+### 模块挂载
 
-Folk-Mount 是管理器对模块挂载后端的称呼，只有两种设置：NoMount（VFS 驱动，默认）与关闭。
-
-### NoMount
-
-NoMount 是内建的 VFS 路径重定向后端：不产生任何挂载，而是由内核模块直接接管路径解析与目录遍历，因此不会污染 `/proc/mounts`。内核模块随 ksud 一起分发（按 KMI 内嵌，由本仓库自行编译），后端本身不依赖模块或 `nm` 二进制。
-
-管理器提供驱动状态、注入规则数、可见性例外与「关闭挂载」；挂载模式只有 `NoMount`（默认）与 `关闭`。它后面已经没有第二个引擎：驱动装载不起来时，那次开机就不注入任何模块，设置页会直接说明，而不会换一种方式挂载。ksud 还会在装载与注入之前先落一份「进行中」记录：如果某次 NoMount 注入之后没能走完启动，下次开机会直接跳过注入，并把原因写进 `/data/adb/ksu/log/mount.log`；同一份日志（有体积上限、会自动轮转）也会记下每次注入的规则数与命中的顶层目录，方便从 bug 报告里判断注入到底碰了哪些路径。要查"卡住时内核在等什么"，可以先 `ksud mount capture on`（默认卡过 150 秒就取证，`ksud mount capture on 60` 可以改时长，`off` 关掉）：取证结果同样落在 `/data/adb/ksu/log/mount_capture.log`，包含 `sysrq w` 打印的全部阻塞任务栈、内核日志结尾、D 状态任务与 pstore。可见性是一份由 ksud 保存的例外名单：名单内的应用看到原厂文件系统，其余应用都能看到注入的文件；NoMount 页可以按需把各应用 Profile 的「卸载模块」判定复制进这份名单，改动 Profile 后需要再复制一次。
-
-目录型符号链接会被当作目录递归遍历并**逐文件合并**（带环路检测与按模块去重）；`.replace` 标记或 opaque 目录同样默认降级为逐文件合并，只有白名单里的 `/product/fonts`、且其原目录不存在或为空时才允许整目录替换。分区根目录，以及名为 `lib64`、`lib`、`bin`、`etc` 的目录，**永远不会**被整目录替换。降级会写进日志：`mount.log` 里带 `dir_replace=N`，`ksud nomount inject --dry-run --verbose` 也会分别标注文件重定向与目录替换。
+模块挂载交给用户自己安装的元模块（NoMount、meta-overlayfs 等）。本版不再内置任何挂载引擎：内置的 NoMount
+驱动、规则规划器和挂载模式开关都已移除，开机时唯一会发布模块目录树的就是元模块自己的 `metamount.sh`。
+没装元模块时模块不生效，`ksud` 会把这一点写进日志，而不会退回第二套引擎。
 
 ### TEESimulator
 

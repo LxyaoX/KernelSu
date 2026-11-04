@@ -189,7 +189,5 @@ FinaSU 无法验证其注入结果。到外部提供者自己的管理页面检�
 
 - [App Profile](/manager/app-profile/)：非 Root 的模块可见性。
 - [隐藏与内核安全](/setting/hiding/)：SELinux Hide、挂载过滤和 AVC Spoof。
-- [Folk Mount](/builtin/folk-mount/)：挂载提供者与可见性模型。
-- [NoMount](/builtin/nomount/)：VFS 重定向、例外 UID 与检测边界。
 - [SUSFS](/builtin/susfs/)：可选内核集成与 LKM。
 - [过检测](/troubleshoot/pass-detection/)：检测工具没有全绿时，先判断是否值得继续处理。

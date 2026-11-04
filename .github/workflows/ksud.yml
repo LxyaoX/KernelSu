@@ -28,15 +28,12 @@ jobs:
       if: ${{ inputs.pack_lkm }}
       run: |
         cp aarch64-android*-lkm/*_kernelsu.ko ./userspace/ksud/bin/aarch64/
-        cp aarch64-android*-lkm/*_nomount.ko ./userspace/ksud/bin/aarch64/
 
         # arm64 is the only Android ABI this project ships, so a missing artifact
-        # here would silently disable LKM updates (and NoMount) on every device.
+        # here would silently disable LKM updates on every device.
         kernelsu=$(find userspace/ksud/bin/aarch64 -name '*_kernelsu.ko' | wc -l)
-        nomount=$(find userspace/ksud/bin/aarch64 -name '*_nomount.ko' | wc -l)
-        echo "aarch64: $kernelsu kernelsu.ko, $nomount nomount.ko"
+        echo "aarch64: $kernelsu kernelsu.ko"
         test "$kernelsu" -gt 0
-        test "$kernelsu" -eq "$nomount"
 
     - name: Prepare ksuinit
       if: ${{ inputs.pack_ksuinit }}

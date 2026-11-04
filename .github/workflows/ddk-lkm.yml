@@ -127,20 +127,10 @@ jobs:
         done
         exit 0
 
-    - name: Build nomount.ko
-      run: |
-        echo "=== Building NoMount for KMI: ${{ inputs.kmi }} ==="
-        # The checkout lives at $GITHUB_WORKSPACE; /github/workspace is only the
-        # scratch directory the kernelsu.ko step creates for its artifacts.
-        NOMOUNT_OUT="/github/workspace/out/aarch64/${{ inputs.kmi }}_nomount.ko" \
-          sh "$GITHUB_WORKSPACE/userspace/nomount/build-lkm.sh"
-        echo "Size: $(du -h "/github/workspace/out/aarch64/${{ inputs.kmi }}_nomount.ko" | cut -f1)"
-
     - name: Upload kernelsu.ko artifact
       uses: actions/upload-artifact@v7
       with:
         name: aarch64-${{ inputs.kmi }}-lkm
         path: |
           /github/workspace/out/aarch64/${{ inputs.kmi }}_kernelsu.ko
-          /github/workspace/out/aarch64/${{ inputs.kmi }}_nomount.ko
 

@@ -2,9 +2,6 @@ package me.weishu.kernelsu.ui.screen.settings
 
 import androidx.compose.runtime.Immutable
 import com.materialkolor.PaletteStyle
-import me.weishu.kernelsu.data.model.FolkMountMode
-import me.weishu.kernelsu.data.model.FolkMountStatus
-import me.weishu.kernelsu.data.model.NomountStatus
 import me.weishu.kernelsu.data.model.BootPropsStatus
 import me.weishu.kernelsu.data.model.RekernelXStatus
 @Immutable
@@ -23,7 +20,6 @@ data class SettingsUiState(
     val hideHomeFingerprint: Boolean = false,
     val hideHomeZygisk: Boolean = false,
     val hideHomeSusfs: Boolean = false,
-    val hideHomeMount: Boolean = false,
     val hideHomeKernelFullVersion: Boolean = false,
     val kernelFullVersionAvailable: Boolean = false,
 
@@ -56,15 +52,6 @@ data class SettingsUiState(
     val isAvcSpoofWriting: Boolean = false,
     val isSulogEnabled: Boolean = false,
 
-    // Folk Mount
-    val folkMountStatus: FolkMountStatus? = null,
-    val isFolkMountLoading: Boolean = false,
-    val isFolkMountWriting: Boolean = false,
-    val folkMountReadError: Boolean = false,
-    // NoMount backend
-    val nomountStatus: NomountStatus? = null,
-    val isNomountLoading: Boolean = true,
-    val nomountReadError: Boolean = false,
     /** Whether the kernel reports a usable SUSFS: gates the home card's SUSFS row switch. */
     val susfsDetected: Boolean = false,
 
@@ -118,8 +105,6 @@ data class SettingsScreenActions(
     val onSetSELinuxMode: (Boolean) -> Unit,
     val onSetSulogEnabled: (Boolean) -> Unit,
     val onSetAvcSpoofEnabled: (Boolean) -> Unit,
-    val onSetFolkMountMode: (FolkMountMode) -> Unit,
-    val onOpenNomount: () -> Unit,
     val onOpenTeesim: () -> Unit,
     val onSetRekernelXEnabled: (Boolean) -> Unit,
     val onSetBootPropsEnabled: (Boolean) -> Unit,
@@ -131,7 +116,6 @@ data class SettingsScreenActions(
     val onSetHideHomeFingerprint: (Boolean) -> Unit,
     val onSetHideHomeZygisk: (Boolean) -> Unit,
     val onSetHideHomeSusfs: (Boolean) -> Unit,
-    val onSetHideHomeMount: (Boolean) -> Unit,
     val onSetHideHomeKernelFullVersion: (Boolean) -> Unit,
     val onSetEnableNavigationBadge: (Boolean) -> Unit,
     val onSetEnablePredictiveBack: (Boolean) -> Unit,
