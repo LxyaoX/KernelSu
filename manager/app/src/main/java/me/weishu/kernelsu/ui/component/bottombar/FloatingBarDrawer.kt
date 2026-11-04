@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -13,10 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import top.yukonga.miuix.kmp.basic.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -90,14 +90,14 @@ internal fun FloatingBarDrawer(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (navBadge != null) {
-                            BadgedBox(
+                            Box(
                                 modifier = Modifier.graphicsLayer {
                                     scaleX = iconScale
                                     scaleY = iconScale
-                                },
-                                badge = { FloatingBadge(navBadge) },
+                                }
                             ) {
                                 NavBarIcon(destination, selected, tint = tint, modifier = Modifier.size(24.dp))
+                                Box(Modifier.align(Alignment.TopEnd)) { FloatingBadge(navBadge) }
                             }
                         } else {
                             NavBarIcon(

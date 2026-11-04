@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -113,8 +112,9 @@ internal fun FloatingBarStandard(
                         contentAlignment = Alignment.Center,
                     ) {
                         if (navBadge != null) {
-                            BadgedBox(badge = { FloatingBadge(navBadge) }) {
+                            Box {
                                 NavBarIcon(destination, selected, tint = tint)
+                                Box(Modifier.align(Alignment.TopEnd)) { FloatingBadge(navBadge) }
                             }
                         } else {
                             NavBarIcon(destination, selected, tint = tint)
