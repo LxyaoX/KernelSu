@@ -1,6 +1,7 @@
 package me.weishu.kernelsu.ui.screen.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
@@ -30,6 +31,10 @@ fun SettingPager(
     val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
     val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
     val activity = LocalActivity.current
+
+    LaunchedEffect(isCurrentPage) {
+        if (isCurrentPage) viewModel.ensureLoaded()
+    }
 
     LifecycleResumeEffect(Unit, activity ?: LocalLifecycleOwner.current) {
         if (initialResumeHandled.value && latestIsCurrentPage) {

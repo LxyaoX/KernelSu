@@ -96,6 +96,7 @@ import me.weishu.kernelsu.ui.component.bottombar.BottomBar
 import me.weishu.kernelsu.ui.component.bottombar.BottomBarDestination
 import me.weishu.kernelsu.ui.component.bottombar.FloatingBar
 import me.weishu.kernelsu.ui.component.bottombar.FloatingBarConfig
+import me.weishu.kernelsu.ui.component.bottombar.FloatingBarVisibilityState
 import me.weishu.kernelsu.ui.component.bottombar.LocalFloatingBarReservedHeight
 import me.weishu.kernelsu.ui.component.bottombar.LocalFloatingBarVisible
 import me.weishu.kernelsu.ui.component.bottombar.LocalIsFloatingNavMode
@@ -256,10 +257,12 @@ open class MainActivity : FragmentActivity() {
                         rememberSaveableStateHolderNavEntryDecorator<NavKey>()
                     val containerTransformDecorator =
                         rememberNavContainerTransformDecorator(navOriginState)
-                    val entryDecorators = listOf(
+                    val entryDecorators = remember(
                         saveableStateHolderDecorator,
                         containerTransformDecorator,
-                    )
+                    ) {
+                        listOf(saveableStateHolderDecorator, containerTransformDecorator)
+                    }
                     val layoutDirection = LocalLayoutDirection.current
                     val transition = remember(layoutDirection, navOriginState) {
                         navTransition(layoutDirection, navOriginState)
@@ -270,11 +273,13 @@ open class MainActivity : FragmentActivity() {
                     val predictivePopTransition = remember(layoutDirection, navOriginState) {
                         navPredictivePopTransition(layoutDirection, navOriginState)
                     }
-                    val mainScreenEntry = @Composable {
-                        MainScreen(
-                            initialPage = selectedMainPage,
-                            onPageChanged = viewModel::setSelectedMainPage,
-                        )
+                    val mainScreenEntry = remember(viewModel) {
+                        @Composable {
+                            MainScreen(
+                                initialPage = viewModel.selectedMainPage.value,
+                                onPageChanged = viewModel::setSelectedMainPage,
+                            )
+                        }
                     }
 
                     val navDisplay = @Composable {
@@ -515,7 +520,6 @@ fun MainScreen(
     val enableNavigationBadge = LocalEnableNavigationBadge.current
     val badgeEnabled = enableNavigationBadge && isFullFeatured
     val moduleViewModel = viewModel<ModuleViewModel>()
-    val moduleUiState by moduleViewModel.uiState.collectAsStateWithLifecycle()
     val superUserViewModel = viewModel<SuperUserViewModel>()
     val grantedUidCount by remember(superUserViewModel) {
         superUserViewModel.uiState
@@ -556,30 +560,27 @@ fun MainScreen(
         superuserCount = if (isFullFeatured) withContext(Dispatchers.IO) { getSuperuserCount() } else 0
     }
 
-    val moduleEnabledCount = moduleUiState.modules.count { it.enabled }
+    val moduleEnabledCount by remember(moduleViewModel) {
+        moduleViewModel.uiState
+            .map { state -> state.modules.count { it.enabled } }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(0)
+    val moduleUpdatableCount by remember(moduleViewModel) {
+        moduleViewModel.uiState
+            .map { state -> state.updateInfo.count { it.value.downloadUrl.isNotBlank() } }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(0)
 
     val navigationBadge = if (badgeEnabled) {
         NavigationBadgeState(
             superuserCount = superuserCount,
             moduleEnabledCount = moduleEnabledCount,
-            moduleUpdatableCount = moduleUiState.updateInfo.count { it.value.downloadUrl.isNotBlank() },
+            moduleUpdatableCount = moduleUpdatableCount,
         )
     } else {
         NavigationBadgeState()
     }
-    val settledPage = mainPagerState.pagerState.settledPage
-    val livePage = mainPagerState.pagerState.currentPage
-    // Report the page as soon as the swipe crosses into it rather than when the fling settles, so
-    // anything scoped to the page follows the gesture instead of arriving a
-    // beat late.
-    LaunchedEffect(livePage) {
-        destinations.getOrNull(livePage)?.let { onPageChanged(it.ordinal) }
-    }
-
-    val currentPage = mainPagerState.pagerState.currentPage
-    LaunchedEffect(currentPage) {
-        mainPagerState.syncPage()
-    }
+    PagerSyncEffects(mainPagerState, destinations, onPageChanged)
 
     // A destination that was hidden releases its slot; the others move up instead of the user
     // being thrown to another page.
@@ -622,7 +623,7 @@ fun MainScreen(
                     snapAnimationSpec = PagerNavigationSpringSpec,
                 ),
             ) { page ->
-                val isCurrentPage = page == settledPage
+                val isCurrentPage = page == mainPagerState.pagerState.settledPage
                 when (destinations.getOrNull(page)) {
                     BottomBarDestination.Home -> if (renderPagerPages || isCurrentPage) HomePager(navController, bottomInnerPadding, isCurrentPage, superuserCount, moduleEnabledCount)
                     BottomBarDestination.SuperUser -> if (renderPagerPages || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
@@ -655,41 +656,15 @@ fun MainScreen(
                 }
             }
         } else if (floatingBarEnabled) {
-            val floatingBarVisible = when {
-                !floatingAutoHide && !floatingSwipeHide -> true
-                !floatingAutoHide -> !floatingBarVisibility.isScrollingDown
-                !floatingSwipeHide -> floatingBarVisibility.visible
-                else -> floatingBarVisibility.visible && !floatingBarVisibility.isScrollingDown
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(floatingBarVisibility.connection)
-            ) {
-                val floatingBarReserved =
-                    floatingBarReservedHeight(floatingBarCompact, floatingBarStyle)
-                CompositionLocalProvider(
-                    LocalIsFloatingNavMode provides true,
-                    LocalFloatingBarVisible provides floatingBarVisible,
-                    LocalFloatingBarReservedHeight provides floatingBarReserved,
-                ) {
-                    pagerContent(
-                        floatingBarReserved +
-                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                    )
-                    AnimatedVisibility(
-                        visible = floatingBarVisible,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                    ) {
-                        FloatingBar(
-                            navigationBadge = navigationBadge,
-                            onUserInteraction = { floatingBarVisibility.onUserInteraction() },
-                        )
-                    }
-                }
-            }
+            FloatingNavHost(
+                visibility = floatingBarVisibility,
+                autoHide = floatingAutoHide,
+                swipeHide = floatingSwipeHide,
+                reservedHeight = floatingBarReservedHeight(floatingBarCompact, floatingBarStyle),
+                navigationBadge = navigationBadge,
+                onUserInteraction = { floatingBarVisibility.onUserInteraction() },
+                pagerContent = pagerContent,
+            )
         } else {
             val bottomBar = @Composable {
                 BottomBar(navigationBadge)
@@ -702,6 +677,66 @@ fun MainScreen(
                 pagerContent(innerPadding.calculateBottomPadding())
             }
         }
+    }
+}
+
+@Composable
+private fun FloatingNavHost(
+    visibility: FloatingBarVisibilityState,
+    autoHide: Boolean,
+    swipeHide: Boolean,
+    reservedHeight: Dp,
+    navigationBadge: NavigationBadgeState,
+    onUserInteraction: () -> Unit,
+    pagerContent: @Composable (Dp) -> Unit,
+) {
+    val barVisible = when {
+        !autoHide && !swipeHide -> true
+        !autoHide -> !visibility.isScrollingDown
+        !swipeHide -> visibility.visible
+        else -> visibility.visible && !visibility.isScrollingDown
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(visibility.connection)
+    ) {
+        CompositionLocalProvider(
+            LocalIsFloatingNavMode provides true,
+            LocalFloatingBarVisible provides barVisible,
+            LocalFloatingBarReservedHeight provides reservedHeight,
+        ) {
+            pagerContent(
+                reservedHeight +
+                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            )
+            AnimatedVisibility(
+                visible = barVisible,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            ) {
+                FloatingBar(
+                    navigationBadge = navigationBadge,
+                    onUserInteraction = onUserInteraction,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PagerSyncEffects(
+    mainPagerState: MainPagerState,
+    destinations: List<BottomBarDestination>,
+    onPageChanged: (Int) -> Unit,
+) {
+    val livePage = mainPagerState.pagerState.currentPage
+    LaunchedEffect(livePage) {
+        destinations.getOrNull(livePage)?.let { onPageChanged(it.ordinal) }
+    }
+    LaunchedEffect(livePage) {
+        mainPagerState.syncPage()
     }
 }
 

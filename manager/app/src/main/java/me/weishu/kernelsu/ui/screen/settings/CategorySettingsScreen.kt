@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,9 +47,10 @@ fun CategorySettingsScreen(categoryKey: String) {
     val viewModel = viewModel<SettingsViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val actions = rememberSettingsActions(navigator, viewModel)
-    // A pushed theme screen can change theme-owned settings; re-read the
-    // preference-backed values on return. Those screens cannot change the kernel feature
-    // states, so the batched probe round trip runs only in the full refresh.
+    LaunchedEffect(Unit) { viewModel.ensureLoaded() }
+    // A pushed theme screen can change theme-owned settings; re-read the preference-backed values
+    // on return. Those screens cannot change the kernel feature states, so the batched probe round
+    // trip runs only in the full refresh.
     var initialResumeHandled by rememberSaveable { mutableStateOf(false) }
     val activity = LocalActivity.current
     LifecycleResumeEffect(Unit, activity ?: LocalLifecycleOwner.current) {

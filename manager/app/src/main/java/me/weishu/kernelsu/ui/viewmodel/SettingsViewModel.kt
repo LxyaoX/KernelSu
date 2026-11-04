@@ -28,8 +28,11 @@ class SettingsViewModel(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
     private var refreshGeneration = 0
+    private var initialized = false
 
-    init {
+    fun ensureLoaded() {
+        if (initialized) return
+        initialized = true
         refresh()
     }
 

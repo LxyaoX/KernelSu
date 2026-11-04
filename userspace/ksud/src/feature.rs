@@ -1,7 +1,7 @@
 use crate::sulog;
 use anyhow::{Context, Result, bail};
 use const_format::concatcp;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
@@ -116,11 +116,47 @@ pub fn save_binary_config(features: &HashMap<u32, u64>) -> Result<()> {
     Ok(())
 }
 
+/// Feature id -> declaring module ids, both sorted and deduplicated.
+///
+/// A module declares the features it owns either in `module.prop` (`managedFeatures`) or in its
+/// config (`manage.<feature>=true`); `module::get_managed_features` merges both. Inverting that
+/// map once keeps `apply_config` from re-scanning every module per feature.
+fn declared_feature_owners() -> BTreeMap<u32, Vec<String>> {
+    let mut owners: BTreeMap<u32, Vec<String>> = BTreeMap::new();
+    for (module_id, features) in crate::module::get_managed_features().unwrap_or_default() {
+        for name in features {
+            match parse_feature_id(&name) {
+                Ok(feature) => owners
+                    .entry(feature as u32)
+                    .or_default()
+                    .push(module_id.clone()),
+                Err(_) => log::warn!("Module '{module_id}' declares unknown feature '{name}'"),
+            }
+        }
+    }
+    for modules in owners.values_mut() {
+        modules.sort_unstable();
+        modules.dedup();
+    }
+    owners
+}
+
 pub fn apply_config(features: &HashMap<u32, u64>) {
     log::info!("Applying feature configuration to kernel...");
 
+    // A feature a module declares is that module's runtime value, not the user's intent: the
+    // persisted config must not overwrite it. The module itself may still call `feature set`.
+    let owners = declared_feature_owners();
+    let caller_module = std::env::var("KSU_MODULE").unwrap_or_default();
+
     let mut applied = 0;
     for (&id, &value) in features {
+        if let Some(modules) = owners.get(&id)
+            && !modules.iter().any(|module| module == &caller_module)
+        {
+            log::info!("Skip feature {id}: declared by module(s) {}", modules.join(", "));
+            continue;
+        }
         if crate::ksucalls::get_feature(id).is_ok_and(|state| state.forced) {
             log::info!("Skip feature {id}: forced by boot config");
             continue;
