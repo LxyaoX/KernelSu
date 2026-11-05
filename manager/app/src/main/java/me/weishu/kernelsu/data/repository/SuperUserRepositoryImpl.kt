@@ -118,6 +118,46 @@ class SuperUserRepositoryImpl : SuperUserRepository {
         }
     }
 
+    /**
+     * The same binder query as [getAppList], minus the profile lookup for every package.
+     *
+     * `KsuService` walks every Android user, so the rows it returns include the clone of an app that
+     * lives under a secondary user (999 for a cloned app, 10 for a work profile) with that user's UID.
+     */
+    override suspend fun getInstalledPackages(): Result<List<PackageInfo>> = withContext(Dispatchers.IO) {
+        runCatching {
+            if (!awaitRootShell().isRoot) {
+                return@withContext Result.failure(
+                    IllegalStateException("Root access is required")
+                )
+            }
+
+            val (binder, connection) = connectKsuService {
+                Log.w(TAG, "KsuService disconnected")
+            }
+            try {
+                var iface = IKsuInterface.Stub.asInterface(binder)
+                try {
+                    iface.getPackages(0).list
+                } catch (_: Exception) {
+                    // A binder that died between connect and use is worth exactly one retry; the
+                    // caller has no way to tell that apart from a real failure.
+                    val retry = connectKsuService { Log.w(TAG, "KsuService disconnected") }
+                    iface = IKsuInterface.Stub.asInterface(retry.first)
+                    try {
+                        iface.getPackages(0).list
+                    } finally {
+                        withContext(Dispatchers.Main) { RootService.unbind(retry.second) }
+                    }
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    RootService.unbind(connection)
+                }
+            }
+        }
+    }
+
     override suspend fun refreshProfiles(currentApps: List<AppInfo>): Result<List<AppInfo>> = withContext(Dispatchers.IO) {
         runCatching {
             if (currentApps.isEmpty()) return@runCatching emptyList()

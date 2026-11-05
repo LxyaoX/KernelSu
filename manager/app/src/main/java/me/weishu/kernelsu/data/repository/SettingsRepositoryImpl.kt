@@ -91,6 +91,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("module_check_update", true)
         set(value) = prefs.edit { putBoolean("module_check_update", value) }
 
+    override var teesimSyncedPackages: String
+        get() = prefs.getString("teesim_synced_packages", "") ?: ""
+        set(value) = prefs.edit { putString("teesim_synced_packages", value) }
+
     override var themeMode: Int
         get() = prefs.getInt("color_mode", 0)
         set(value) = prefs.edit { putInt("color_mode", value) }

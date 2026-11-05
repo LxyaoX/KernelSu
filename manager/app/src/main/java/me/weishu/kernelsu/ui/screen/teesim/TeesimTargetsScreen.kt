@@ -1,5 +1,9 @@
 package me.weishu.kernelsu.ui.screen.teesim
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +77,27 @@ fun TeesimTargetsScreen() {
 
     LaunchedEffect(Unit) { viewModel.loadApps() }
 
+    // An app installed while this screen is open has to appear without reopening it - and with the
+    // profile that auto-includes new apps, it also has to become a target right away.
+    val context = LocalContext.current
+    DisposableEffect(context, viewModel) {
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addDataScheme("package")
+        }
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                // Replacing an app fires REMOVED and then ADDED; reloading on both is cheap because
+                // the query is one binder call and the result is cached until the next broadcast.
+                viewModel.onPackagesChanged()
+            }
+        }
+        context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+
     val savedApps = state.status?.targetApps.orEmpty()
     var selected by remember(savedApps) { mutableStateOf(savedApps.toSet()) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -79,11 +106,13 @@ fun TeesimTargetsScreen() {
     val visible = state.apps.filter { app ->
         app.packageName !in reserved &&
             (state.showSystemApps || !app.system) &&
+            (state.showOtherUsers || !app.isOtherUser) &&
             (query.isBlank() ||
                 app.label.contains(query, ignoreCase = true) ||
                 app.packageName.contains(query, ignoreCase = true))
     }
-    val visiblePackages = visible.map { it.packageName }
+    // One package may be listed once per user; "select all shown" is still about packages.
+    val visiblePackages = visible.map { it.packageName }.distinct()
     // Saving replaces the whole app list, so an unreadable or unparsable config must not be
     // edited: an empty picker would otherwise write an empty profile over the user's selection.
     val config = state.status?.config
@@ -167,6 +196,14 @@ fun TeesimTargetsScreen() {
                         onCheckedChange = viewModel::setShowSystemApps,
                     )
                 }
+                if (state.apps.any { it.isOtherUser }) {
+                    SwitchPreference(
+                        title = stringResource(R.string.teesim_show_other_users),
+                        summary = stringResource(R.string.teesim_show_other_users_summary),
+                        checked = state.showOtherUsers,
+                        onCheckedChange = viewModel::setShowOtherUsers,
+                    )
+                }
             }
 
             // Bulk actions work on what the filter currently shows, so selecting a vendor prefix
@@ -248,7 +285,7 @@ fun TeesimTargetsScreen() {
                             )
                         }
                     }
-                    items(visible, key = { it.packageName }) { app ->
+                    items(visible, key = { it.key }) { app ->
                         val checked = selected.contains(app.packageName)
                         SegmentedListItem(
                             enabled = canEdit,
@@ -267,7 +304,19 @@ fun TeesimTargetsScreen() {
                                 )
                             },
                             headlineContent = { Text(app.label) },
-                            supportingContent = { Text(app.packageName) },
+                            supportingContent = {
+                                Text(
+                                    if (app.isOtherUser) {
+                                        stringResource(
+                                            R.string.teesim_app_row_other_user,
+                                            app.packageName,
+                                            userBadge(app.userId),
+                                        )
+                                    } else {
+                                        app.packageName
+                                    }
+                                )
+                            },
                             trailingContent = {
                                 androidx.compose.material3.Checkbox(
                                     checked = checked,
@@ -289,3 +338,20 @@ fun TeesimTargetsScreen() {
         }
     }
 }
+
+/**
+ * How a user id is named in a row.
+ *
+ * 999 is where an app clone lives on MIUI and HyperOS, which is the case this list exists for; every
+ * other id is reported as a number rather than guessed at, because a work profile can be any id.
+ */
+@Composable
+private fun userBadge(userId: Int): String =
+    if (userId == CLONE_USER) {
+        stringResource(R.string.teesim_user_clone, userId)
+    } else {
+        stringResource(R.string.teesim_user_other, userId)
+    }
+
+/** MIUI and HyperOS install a cloned app under this user. */
+private const val CLONE_USER = 999

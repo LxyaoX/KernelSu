@@ -3,6 +3,7 @@ package me.weishu.kernelsu.ui.viewmodel
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.net.Uri
+import android.os.Process
 import android.util.Base64
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
@@ -18,19 +19,34 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.PifOption
 import me.weishu.kernelsu.data.model.PifProp
 import me.weishu.kernelsu.data.model.PifStatus
+import me.weishu.kernelsu.data.model.WEBVIEW_ZYGOTE_UID
 import me.weishu.kernelsu.data.model.TeesimStatus
 import me.weishu.kernelsu.data.repository.SettingsRepository
+import me.weishu.kernelsu.data.repository.SuperUserRepository
+import me.weishu.kernelsu.data.repository.SuperUserRepositoryImpl
 import me.weishu.kernelsu.data.teesim.TeesimKeybox
 import me.weishu.kernelsu.data.repository.SettingsRepositoryImpl
 import me.weishu.kernelsu.ksuApp
 
-/** One row of the target picker, carrying what it needs to draw itself. */
+/**
+ * One row of the target picker, carrying what it needs to draw itself.
+ *
+ * [userId] is the Android user the install belongs to: 0 for the owner, 999 for an app clone, 10
+ * for a work profile. An app can be installed for several of them, so the picker lists it once per
+ * user and the row says which one it is.
+ */
 data class TeesimApp(
     val packageName: String,
     val label: String,
     val system: Boolean,
     val packageInfo: PackageInfo,
-)
+    val userId: Int = 0,
+) {
+    /** Rows are keyed by package *and* user; the same package in two users is two rows. */
+    val key: String get() = "$packageName@$userId"
+
+    val isOtherUser: Boolean get() = userId != TeesimViewModel.PRIMARY_USER
+}
 
 data class TeesimUiState(
     val status: TeesimStatus? = null,
@@ -40,6 +56,8 @@ data class TeesimUiState(
     val apps: List<TeesimApp> = emptyList(),
     val appsLoading: Boolean = false,
     val showSystemApps: Boolean = false,
+    /** Rows for installs in other users: app clones (999) and work profiles. */
+    val showOtherUsers: Boolean = true,
     /** The bundled PlayIntegrityFix module, or null while it has not been read yet. */
     val pif: PifStatus? = null,
 )
@@ -53,6 +71,7 @@ data class TeesimUiState(
  */
 class TeesimViewModel(
     private val repo: SettingsRepository = SettingsRepositoryImpl(),
+    private val appRepo: SuperUserRepository = SuperUserRepositoryImpl(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TeesimUiState())
@@ -74,6 +93,9 @@ class TeesimViewModel(
                     pif = pif.getOrNull() ?: it.pif,
                 )
             }
+            // Opening the page is also the moment a profile that auto-includes new apps catches up
+            // with anything installed since it was last written.
+            syncNewTargets()
         }
     }
 
@@ -173,7 +195,13 @@ class TeesimViewModel(
 
     fun setTargets(packages: List<String>, autoInclude: Boolean) =
         write(R.string.teesim_targets_saved, R.string.teesim_write_failed) {
-            repo.setTeesimTargetApps(packages, autoInclude)
+            repo.setTeesimTargetApps(packages, autoInclude).onSuccess {
+                // The list now describes these apps, so anything on the device is no longer "new";
+                // without this the next open would add the apps the user just unticked.
+                runCatching { thirdPartyPackages() }.onSuccess { installed ->
+                    repo.teesimSyncedPackages = installed.joinToString("\n")
+                }
+            }
         }
 
     /**
@@ -225,36 +253,135 @@ class TeesimViewModel(
         }
     }
 
-    fun loadApps() {
+    /**
+     * Reads the installed packages, once per change of the App Store.
+     *
+     * Every user is walked, so a cloned app (user 999) or one installed in a work profile shows up
+     * as its own row instead of being folded into the owner's copy. No profile is read per package:
+     * the picker only needs names, labels and the owning user, and asking `AppProfile` for a few
+     * hundred packages is a binder round trip each.
+     *
+     * [force] re-reads after a package was installed or removed; otherwise the list is cached for
+     * the life of the screen.
+     */
+    fun loadApps(force: Boolean = false) {
         val state = _uiState.value
-        if (state.apps.isNotEmpty() || state.appsLoading) return
+        if (!force && (state.apps.isNotEmpty() || state.appsLoading)) return
         _uiState.update { it.copy(appsLoading = true) }
         viewModelScope.launch {
             val apps = withContext(Dispatchers.IO) {
                 runCatching {
-                    // The superuser list is a process-wide cache; fill it once and reuse it here
-                    // instead of walking PackageManager a second time.
-                    if (SuperUserViewModel.apps.isEmpty()) SuperUserViewModel().fetchAppList()
-                    SuperUserViewModel.apps
-                        // The superuser list carries synthetic rows (WebView Zygote has no
-                        // package name); config.json targets packages, so only real apps fit.
-                        .filter { it.packageName.isNotBlank() && !it.special }
-                        .map { app ->
+                    val pm = ksuApp.packageManager
+                    appRepo.getInstalledPackages().getOrThrow()
+                        .filter { info ->
+                            val ai = info.applicationInfo ?: return@filter false
+                            // WebView Zygote is a bare UID with no package, and an app without code
+                            // cannot be a target.
+                            ai.uid != WEBVIEW_ZYGOTE_UID &&
+                                (ai.flags and ApplicationInfo.FLAG_HAS_CODE) != 0
+                        }
+                        .map { info ->
+                            val ai = info.applicationInfo!!
                             TeesimApp(
-                                packageName = app.packageName,
-                                label = app.label,
-                                system = ((app.packageInfo.applicationInfo?.flags ?: 0) and
-                                    ApplicationInfo.FLAG_SYSTEM) != 0,
-                                packageInfo = app.packageInfo,
+                                packageName = info.packageName,
+                                label = runCatching { ai.loadLabel(pm).toString() }
+                                    .getOrDefault(info.packageName),
+                                system = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
+                                packageInfo = info,
+                                userId = ai.uid / PER_USER_RANGE,
                             )
                         }
-                        .distinctBy { it.packageName }
-                        .sortedBy { it.label.lowercase() }
+                        // One row per (package, user): the same app in two users is two installs.
+                        .distinctBy { it.key }
+                        // The owner's installs first, then the clones, each group by label.
+                        .sortedWith(compareBy({ it.isOtherUser }, { it.label.lowercase() }))
                 }.getOrDefault(emptyList())
             }
             _uiState.update { it.copy(apps = apps, appsLoading = false) }
         }
     }
+
+    fun setShowOtherUsers(show: Boolean) {
+        _uiState.update { it.copy(showOtherUsers = show) }
+    }
+
+    /**
+     * Called when a package was installed or removed while the picker is open.
+     *
+     * Re-reads the list and, for a profile that auto-includes new apps, adds what appeared - so a
+     * fresh install becomes a target without the user reopening the screen or pressing rescan.
+     */
+    fun onPackagesChanged() {
+        loadApps(force = true)
+        syncNewTargets()
+    }
+
+    /**
+     * Adds the packages installed since the list was last written to a profile that auto-includes.
+     *
+     * The daemon takes new apps in by itself, but only while its configuration is reloaded, and the
+     * manager is the thing that reloads it. Two facts are needed to do that without guessing: the
+     * packages that existed when the profile was last written (persisted, see
+     * [SettingsRepository.teesimSyncedPackages]) and the ones installed now. Their difference is
+     * what gets appended, which is why an app the user unticked is not put back.
+     *
+     * The first run records the baseline and adds nothing: without one, every app already on the
+     * device would look new and the profile would become "everything".
+     */
+    fun syncNewTargets() {
+        val state = _uiState.value
+        val status = state.status ?: return
+        val config = status.config
+        if (!status.installed || config.broken || !config.autoInclude || state.writing) return
+        viewModelScope.launch {
+            val installed = withContext(Dispatchers.IO) {
+                runCatching { thirdPartyPackages() }.getOrNull()
+            } ?: return@launch
+            val known = repo.teesimSyncedPackages
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+            if (known.isEmpty()) {
+                repo.teesimSyncedPackages = installed.sorted().joinToString("\n")
+                return@launch
+            }
+            val added = installed.filterNot { it in known || it in config.defaultApps }
+            if (added.isNotEmpty()) {
+                _uiState.update { it.copy(writing = true) }
+                val result = repo.setTeesimTargetApps(config.defaultApps + added, autoInclude = true)
+                val refreshed = repo.getTeesimStatus()
+                _uiState.update {
+                    it.copy(
+                        writing = false,
+                        status = refreshed.getOrNull() ?: it.status,
+                        readError = refreshed.isFailure,
+                    )
+                }
+                toast(
+                    if (result.isSuccess) R.string.teesim_auto_added else R.string.teesim_write_failed
+                )
+            }
+            repo.teesimSyncedPackages = installed.sorted().joinToString("\n")
+        }
+    }
+
+    /**
+     * Package names of everything the user installed, across every Android user.
+     *
+     * System apps are left out on purpose: an OTA adds and replaces plenty of them, and none of
+     * them is what "a new app" means to the person who turned auto-include on.
+     */
+    private suspend fun thirdPartyPackages(): List<String> =
+        appRepo.getInstalledPackages().getOrThrow()
+            .filter { info ->
+                val ai = info.applicationInfo ?: return@filter false
+                ai.uid != WEBVIEW_ZYGOTE_UID &&
+                    (ai.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) == 0
+            }
+            .map { it.packageName }
+            .distinct()
+            .sorted()
 
     fun setShowSystemApps(show: Boolean) {
         _uiState.update { it.copy(showSystemApps = show) }
@@ -288,7 +415,13 @@ class TeesimViewModel(
         Toast.makeText(ksuApp, messageRes, Toast.LENGTH_LONG).show()
     }
 
-    private companion object {
+    companion object {
+        /** The user the manager itself runs as; every other id is a clone or a profile. */
+        val PRIMARY_USER: Int = Process.myUid() / PER_USER_RANGE
+
+        /** Android's fixed stride between one user's app ids and the next. */
+        private const val PER_USER_RANGE = 100_000
+
         /** A real keybox is a few dozen kilobytes; anything past this is not one. */
         const val MAX_KEYBOX_BYTES = 1_048_576
 

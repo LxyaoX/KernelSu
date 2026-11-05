@@ -587,6 +587,12 @@
     <string name="teesim_rescan">Rescan installed apps</string>
     <string name="teesim_rescan_done">Packages rescanned</string>
     <string name="teesim_show_system_apps">Show system apps</string>
+    <string name="teesim_show_other_users">Show app clones and other users</string>
+    <string name="teesim_show_other_users_summary">Apps installed for a clone (user 999) or a work profile, listed apart from the owner&#39;s copy</string>
+    <string name="teesim_app_row_other_user">%1$s · %2$s</string>
+    <string name="teesim_user_clone">Clone %1$d</string>
+    <string name="teesim_user_other">User %1$d</string>
+    <string name="teesim_auto_added">New apps added to the target list</string>
     <string name="teesim_selected_count">Selected: %1$d</string>
     <string name="teesim_select_all">Select all shown</string>
     <string name="teesim_clear_selection">Clear selection</string>

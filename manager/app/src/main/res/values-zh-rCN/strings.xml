@@ -603,6 +603,12 @@
     <string name="teesim_rescan">重新扫描已安装的应用</string>
     <string name="teesim_rescan_done">已重新扫描应用</string>
     <string name="teesim_show_system_apps">显示系统应用</string>
+    <string name="teesim_show_other_users">显示分身和其他用户的应用</string>
+    <string name="teesim_show_other_users_summary">装在分身（999 用户）或工作资料里的应用，与主用户的副本分列</string>
+    <string name="teesim_app_row_other_user">%1$s · %2$s</string>
+    <string name="teesim_user_clone">分身 %1$d</string>
+    <string name="teesim_user_other">用户 %1$d</string>
+    <string name="teesim_auto_added">已把新安装的应用加入目标列表</string>
     <string name="teesim_selected_count">已选：%1$d</string>
     <string name="teesim_select_all">全选当前列表</string>
     <string name="teesim_clear_selection">清除选择</string>

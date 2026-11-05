@@ -120,6 +120,15 @@ interface SettingsRepository {
     suspend fun rescanTeesimTargets(): Result<Unit>
 
     /**
+     * Package names the target list was last reconciled against, newline separated.
+     *
+     * The daemon takes new apps in on its own, but the manager has to know which apps existed when
+     * it last wrote the profile: anything installed after that is a "new" package, and only those
+     * are added to the list, so an app the user unticked is not put back on the next open.
+     */
+    var teesimSyncedPackages: String
+
+    /**
      * PlayIntegrityFix travels inside ksud: its payload is written under the manager's own directory
      * and linked into `/data/adb/modules` so the library it carries finds its files.
      */
