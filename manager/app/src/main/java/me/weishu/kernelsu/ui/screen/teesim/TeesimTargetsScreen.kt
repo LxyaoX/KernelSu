@@ -197,12 +197,14 @@ fun TeesimTargetsScreen() {
                     )
                 }
                 if (state.apps.any { it.isOtherUser }) {
-                    SwitchPreference(
-                        title = stringResource(R.string.teesim_show_other_users),
-                        summary = stringResource(R.string.teesim_show_other_users_summary),
-                        checked = state.showOtherUsers,
-                        onCheckedChange = viewModel::setShowOtherUsers,
-                    )
+                    item {
+                        SwitchPreference(
+                            title = stringResource(R.string.teesim_show_other_users),
+                            summary = stringResource(R.string.teesim_show_other_users_summary),
+                            checked = state.showOtherUsers,
+                            onCheckedChange = viewModel::setShowOtherUsers,
+                        )
+                    }
                 }
             }
 

@@ -128,9 +128,6 @@ fun ModuleRepoScreenMaterial(
     val listState = rememberLazyGridState()
     val searchListState = rememberLazyGridState()
     val pullToRefreshState = rememberPullToRefreshState()
-    // The search bar is still the Material one, so this screen keeps a Material behaviour for it;
-    // the detail sheet below has its own miuix one.
-    val scrollBehavior = MiuixScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var pendingDownload by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -145,7 +142,6 @@ fun ModuleRepoScreenMaterial(
                 searchText = state.searchStatus.searchText,
                 onSearchTextChange = actions.onSearchTextChange,
                 onClearClick = actions.onClearSearch,
-                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     TopBarBackButton(onClick = actions.onBack)
                 },
@@ -267,9 +263,7 @@ fun ModuleRepoScreenMaterial(
                 StoreModuleGrid(
                     modules = state.modules,
                     listState = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,

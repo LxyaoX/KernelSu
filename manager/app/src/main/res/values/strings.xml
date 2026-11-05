@@ -588,7 +588,7 @@
     <string name="teesim_rescan_done">Packages rescanned</string>
     <string name="teesim_show_system_apps">Show system apps</string>
     <string name="teesim_show_other_users">Show app clones and other users</string>
-    <string name="teesim_show_other_users_summary">Apps installed for a clone (user 999) or a work profile, listed apart from the owner&#39;s copy</string>
+    <string name="teesim_show_other_users_summary">Apps installed for a clone (user 999) or a work profile, listed apart from the copy the owner has</string>
     <string name="teesim_app_row_other_user">%1$s · %2$s</string>
     <string name="teesim_user_clone">Clone %1$d</string>
     <string name="teesim_user_other">User %1$d</string>
