@@ -40,11 +40,12 @@ import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import me.weishu.kernelsu.ui.theme.FolkMotion
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
@@ -64,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -89,7 +89,6 @@ import me.weishu.kernelsu.ui.component.material.FolkTextButton
 import me.weishu.kernelsu.ui.component.material.SearchAppBar
 import me.weishu.kernelsu.ui.component.material.SnackBarHost
 import me.weishu.kernelsu.ui.component.material.TopBarBackButton
-import me.weishu.kernelsu.ui.component.material.rememberSearchAppBarScrollBehavior
 import me.weishu.kernelsu.ui.component.module.AdaptiveModuleButtonRow
 import me.weishu.kernelsu.ui.component.module.ModuleActionsSheet
 import me.weishu.kernelsu.ui.component.module.ModuleButtonConfig
@@ -112,8 +111,6 @@ fun KernelModuleScreen() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val pullState = rememberPullToRefreshState()
-    val scrollBehavior = MiuixScrollBehavior()
-    val searchScrollBehavior = rememberSearchAppBarScrollBehavior(scrollBehavior)
     val installingMessage = stringResource(R.string.kernel_modules_installing)
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) viewModel.install(uri)
@@ -141,10 +138,7 @@ fun KernelModuleScreen() {
             actions = actions,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .then(
-                    Modifier.nestedScroll(searchScrollBehavior.nestedScrollConnection)
-                ),
+                .padding(padding),
         )
     }
 
@@ -154,7 +148,6 @@ fun KernelModuleScreen() {
                 largeTitle = true,
                 topSearch = false,
                 collapsibleSearch = true,
-                scrollBehavior = searchScrollBehavior,
                 title = { Text(stringResource(R.string.kernel_modules)) },
                 searchText = state.searchText,
                 onSearchTextChange = actions.onSearchTextChange,
@@ -408,13 +401,13 @@ private fun SafeModeNotice() {
     ) {
         Text(
             stringResource(R.string.kernel_modules_safe_mode),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.error,
+            style = MiuixTheme.textStyles.headline1,
+            color = MiuixTheme.colorScheme.error,
         )
         Text(
             stringResource(R.string.kernel_modules_safe_mode_summary),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
     }
 }
@@ -427,16 +420,16 @@ private fun MessageState(modifier: Modifier, title: String, summary: String?) {
                 Icons.Outlined.Memory,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MiuixTheme.colorScheme.primary,
             )
             Spacer(Modifier.height(12.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = MiuixTheme.textStyles.headline1)
             summary?.let {
                 Spacer(Modifier.height(6.dp))
                 Text(
                     it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         }
@@ -481,14 +474,14 @@ private fun KernelModuleCard(
         stateText
     }
     val statusContainerColor = when {
-        module.disabled || module.loaded == LoadState.UNKNOWN -> MaterialTheme.colorScheme.errorContainer
-        module.loaded == LoadState.LOADED -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.secondaryContainer
+        module.disabled || module.loaded == LoadState.UNKNOWN -> MiuixTheme.colorScheme.errorContainer
+        module.loaded == LoadState.LOADED -> MiuixTheme.colorScheme.primaryContainer
+        else -> MiuixTheme.colorScheme.secondaryContainer
     }
     val statusContentColor = when {
-        module.disabled || module.loaded == LoadState.UNKNOWN -> MaterialTheme.colorScheme.onErrorContainer
-        module.loaded == LoadState.LOADED -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSecondaryContainer
+        module.disabled || module.loaded == LoadState.UNKNOWN -> MiuixTheme.colorScheme.onErrorContainer
+        module.loaded == LoadState.LOADED -> MiuixTheme.colorScheme.onPrimaryContainer
+        else -> MiuixTheme.colorScheme.onSecondaryContainer
     }
     var showMoreActions by rememberSaveable(module.id) { mutableStateOf(false) }
 
@@ -566,8 +559,8 @@ private fun KernelModuleCard(
         add(
             ModuleCardLabel(
                 text = module.id,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                containerColor = MiuixTheme.colorScheme.primaryContainer,
+                contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
             )
         )
         add(
@@ -581,8 +574,8 @@ private fun KernelModuleCard(
             add(
                 ModuleCardLabel(
                     text = stringResource(R.string.kernel_modules_protected),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = MiuixTheme.colorScheme.secondaryContainer,
+                    contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
                 )
             )
         }
@@ -640,10 +633,8 @@ private fun KernelModuleCard(
     ) {
         AnimatedVisibility(
             visible = !foldEnabled || expanded,
-            enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) +
-                expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
-            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
-                fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            enter = fadeIn(FolkMotion.FadeInOut) + expandVertically(FolkMotion.smoothSpring()),
+            exit = shrinkVertically(FolkMotion.smoothSpring()) + fadeOut(FolkMotion.FadeInOut),
         ) {
             Column {
                 if (!pending) {
@@ -700,24 +691,24 @@ private fun KernelModuleDetailsSheet(
                 .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(module.name, style = MaterialTheme.typography.headlineSmall)
+            Text(module.name, style = MiuixTheme.textStyles.title2)
             Text(
                 stateLabel(module),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.body2,
                 color = when (module.loaded) {
-                    LoadState.LOADED -> MaterialTheme.colorScheme.primary
-                    LoadState.UNKNOWN -> MaterialTheme.colorScheme.error
-                    LoadState.NOT_LOADED -> MaterialTheme.colorScheme.onSurfaceVariant
+                    LoadState.LOADED -> MiuixTheme.colorScheme.primary
+                    LoadState.UNKNOWN -> MiuixTheme.colorScheme.error
+                    LoadState.NOT_LOADED -> MiuixTheme.colorScheme.onSurfaceVariantSummary
                 },
             )
             if (module.description.isNotBlank()) {
-                Text(module.description, style = MaterialTheme.typography.bodyMedium)
+                Text(module.description, style = MiuixTheme.textStyles.body2)
             }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text(
                 stringResource(R.string.kernel_modules_basic_info),
-                style = MaterialTheme.typography.titleSmall,
+                style = MiuixTheme.textStyles.headline1,
             )
             DetailRow(
                 stringResource(R.string.kernel_modules_version),
@@ -749,7 +740,7 @@ private fun KernelModuleDetailsSheet(
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text(
                 stringResource(R.string.kernel_modules_technical_info),
-                style = MaterialTheme.typography.titleSmall,
+                style = MiuixTheme.textStyles.headline1,
             )
             SelectionContainer {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -791,8 +782,8 @@ private fun KernelModuleDetailsSheet(
 @Composable
 private fun DetailRow(label: String, value: String) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelSmall)
-        Text(value, style = MaterialTheme.typography.bodySmall)
+        Text(label, style = MiuixTheme.textStyles.footnote2)
+        Text(value, style = MiuixTheme.textStyles.body2)
     }
 }
 
@@ -824,12 +815,12 @@ private fun KernelModuleParamsSheet(
         ) {
             Text(
                 stringResource(R.string.kernel_modules_params_title, module.name),
-                style = MaterialTheme.typography.titleLarge,
+                style = MiuixTheme.textStyles.title3,
             )
             Text(
                 stringResource(R.string.kernel_modules_params_help),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             OutlinedTextField(
                 value = draft,
@@ -843,8 +834,8 @@ private fun KernelModuleParamsSheet(
                     module.parameters.joinToString("\n") {
                         it.name + (it.valueType?.let { type -> ": $type" } ?: "")
                     },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
             Row(
@@ -889,7 +880,7 @@ private fun KernelModuleLogSheet(
         ) {
             Text(
                 stringResource(R.string.kernel_modules_log_title, module.name),
-                style = MaterialTheme.typography.titleLarge,
+                style = MiuixTheme.textStyles.title3,
             )
             Column(
                 modifier = Modifier
@@ -906,7 +897,7 @@ private fun KernelModuleLogSheet(
                     SelectionContainer {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (result.message.isNotBlank()) {
-                                Text(result.message, style = MaterialTheme.typography.bodyMedium)
+                                Text(result.message, style = MiuixTheme.textStyles.body2)
                             }
                             DetailRow(
                                 stringResource(R.string.kernel_modules_log_operation),

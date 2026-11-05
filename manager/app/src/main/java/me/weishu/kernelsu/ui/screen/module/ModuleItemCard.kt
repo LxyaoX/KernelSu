@@ -13,8 +13,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Terminal
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -26,9 +24,12 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.Module
 import me.weishu.kernelsu.ui.component.material.ExpressiveSwitch
 import me.weishu.kernelsu.ui.component.module.AdaptiveModuleButtonRow
+import me.weishu.kernelsu.ui.component.module.ModuleButtonColors
 import me.weishu.kernelsu.ui.component.module.ModuleButtonConfig
 import me.weishu.kernelsu.ui.component.module.ModuleCardLabel
 import me.weishu.kernelsu.ui.component.module.ModuleCardShell
+import me.weishu.kernelsu.ui.theme.FolkMotion
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 enum class ModuleButtonStyle {
     Full,
@@ -69,8 +70,8 @@ fun ModuleItemCard(
             add(
                 ModuleCardLabel(
                     text = module.id,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = MiuixTheme.colorScheme.primaryContainer,
+                    contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
                 )
             )
         }
@@ -78,22 +79,22 @@ fun ModuleItemCard(
             module.remove -> add(
                 ModuleCardLabel(
                     text = stringResource(R.string.uninstall),
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    containerColor = MiuixTheme.colorScheme.errorContainer,
+                    contentColor = MiuixTheme.colorScheme.onErrorContainer,
                 )
             )
             hasUpdate && !module.update -> add(
                 ModuleCardLabel(
                     text = stringResource(R.string.module_update),
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    containerColor = MiuixTheme.colorScheme.tertiaryContainer,
+                    contentColor = MiuixTheme.colorScheme.onTertiaryContainer,
                 )
             )
             module.update -> add(
                 ModuleCardLabel(
                     text = "Updated",
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    containerColor = MiuixTheme.colorScheme.tertiaryContainer,
+                    contentColor = MiuixTheme.colorScheme.onTertiaryContainer,
                 )
             )
         }
@@ -101,8 +102,8 @@ fun ModuleItemCard(
             add(
                 ModuleCardLabel(
                     text = stringResource(R.string.zygisk_required),
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    containerColor = MiuixTheme.colorScheme.errorContainer,
+                    contentColor = MiuixTheme.colorScheme.onErrorContainer,
                 )
             )
         }
@@ -110,8 +111,8 @@ fun ModuleItemCard(
             add(
                 ModuleCardLabel(
                     text = "WebUI",
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = MiuixTheme.colorScheme.primaryContainer,
+                    contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
                 )
             )
         }
@@ -119,8 +120,8 @@ fun ModuleItemCard(
             add(
                 ModuleCardLabel(
                     text = stringResource(R.string.action),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = MiuixTheme.colorScheme.secondaryContainer,
+                    contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
                 )
             )
         }
@@ -128,8 +129,8 @@ fun ModuleItemCard(
             add(
                 ModuleCardLabel(
                     text = "META",
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    containerColor = MiuixTheme.colorScheme.errorContainer,
+                    contentColor = MiuixTheme.colorScheme.onErrorContainer,
                 )
             )
         }
@@ -174,10 +175,8 @@ fun ModuleItemCard(
         Spacer(Modifier.height(if (showMoreInfo && module.description.isNotBlank()) 16.dp else 12.dp))
         AnimatedVisibility(
             visible = !foldSystemModule || expanded,
-            enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()) +
-                expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
-            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
-                fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            enter = fadeIn(FolkMotion.FadeInOut) + expandVertically(FolkMotion.smoothSpring()),
+            exit = shrinkVertically(FolkMotion.smoothSpring()) + fadeOut(FolkMotion.FadeInOut),
         ) {
             ModuleActionRow(
                 module = module,
@@ -257,16 +256,17 @@ private fun ModuleActionRow(
         contentDescription = if (module.remove) stringResource(R.string.undo) else stringResource(R.string.uninstall),
         onClick = onUninstallClicked,
         colors = when {
-            iconOnly -> ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            iconOnly -> ModuleButtonColors(
+                containerColor = MiuixTheme.colorScheme.secondaryContainer,
+                contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
             )
-            module.remove -> ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            module.remove -> ModuleButtonColors(
+                containerColor = MiuixTheme.colorScheme.tertiaryContainer,
+                contentColor = MiuixTheme.colorScheme.onTertiaryContainer,
             )
-            else -> ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            else -> ModuleButtonColors(
+                containerColor = MiuixTheme.colorScheme.errorContainer,
+                contentColor = MiuixTheme.colorScheme.onErrorContainer,
             )
         },
     )

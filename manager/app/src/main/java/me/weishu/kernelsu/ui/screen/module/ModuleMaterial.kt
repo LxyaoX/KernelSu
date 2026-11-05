@@ -58,7 +58,6 @@ import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -88,7 +87,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -127,7 +125,6 @@ import me.weishu.kernelsu.ui.component.material.FolkSmallExtendedFloatingActionB
 import me.weishu.kernelsu.ui.component.material.FolkTextButton
 import me.weishu.kernelsu.ui.component.material.SearchAppBar
 import me.weishu.kernelsu.ui.component.material.SnackBarHost
-import me.weishu.kernelsu.ui.component.material.rememberSearchAppBarScrollBehavior
 import me.weishu.kernelsu.ui.component.module.TwoColumnGrid
 import me.weishu.kernelsu.ui.component.module.splicedLazyColumnGroup
 import me.weishu.kernelsu.ui.navigation3.LocalNavOriginState
@@ -165,8 +162,6 @@ fun ModulePagerMaterial(
     } else {
         null
     }
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-    val searchBarScrollBehavior = rememberSearchAppBarScrollBehavior(topAppBarScrollBehavior)
     val refreshTick = remember { mutableIntStateOf(0) }
     val threshold = with(LocalDensity.current) { 100.dp.toPx() }
     val fabExpanded by remember {
@@ -279,7 +274,6 @@ fun ModulePagerMaterial(
                 topSearch = false,
                 collapsibleSearch = true,
                 searchPlaceholder = stringResource(R.string.module_search_hint),
-                scrollBehavior = searchBarScrollBehavior,
                 title = { Text(stringResource(R.string.module)) },
                 searchText = uiState.searchStatus.searchText,
                 onSearchTextChange = actions.onSearchTextChange,
@@ -503,7 +497,6 @@ fun ModulePagerMaterial(
 
             ModuleList(
                 bottomInnerPadding = bottomInnerPadding,
-                modifier = Modifier.nestedScroll(searchBarScrollBehavior.nestedScrollConnection),
                 listState = listState,
                 displayModules = displayModules,
                 emptyTitle = emptyTitle,

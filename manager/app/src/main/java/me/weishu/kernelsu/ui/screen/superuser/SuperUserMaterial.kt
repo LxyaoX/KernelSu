@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.CheckableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -54,7 +53,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,7 +66,6 @@ import me.weishu.kernelsu.ui.component.material.ExpressiveScaffold
 import me.weishu.kernelsu.ui.component.material.FolkIconButton
 import me.weishu.kernelsu.ui.component.material.SearchAppBar
 import me.weishu.kernelsu.ui.component.material.SegmentedColumn
-import me.weishu.kernelsu.ui.component.material.rememberSearchAppBarScrollBehavior
 import me.weishu.kernelsu.ui.component.material.SegmentedItem
 import me.weishu.kernelsu.ui.component.material.SegmentedListItem
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
@@ -92,9 +89,6 @@ fun SuperUserPagerMaterial(
         localSearchText = uiState.searchStatus.searchText
     }
 
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-    val searchBarScrollBehavior = rememberSearchAppBarScrollBehavior(topAppBarScrollBehavior)
-
     val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -105,7 +99,6 @@ fun SuperUserPagerMaterial(
                 topSearch = false,
                 collapsibleSearch = true,
                 searchPlaceholder = stringResource(R.string.superuser_search_hint),
-                scrollBehavior = searchBarScrollBehavior,
                 snackbarHostState = snackbarHostState,
                 title = { Text(stringResource(R.string.superuser)) },
                 searchText = localSearchText,
@@ -353,11 +346,7 @@ fun SuperUserPagerMaterial(
 
             LazyColumn(
                 state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        Modifier.nestedScroll(searchBarScrollBehavior.nestedScrollConnection)
-                    ),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
                 contentPadding = PaddingValues(
                     start = 16.dp,

@@ -12,28 +12,47 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import me.weishu.kernelsu.ui.theme.ContinuousCornerShape
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/** The pair of colours a module card button is filled and lettered with. */
+@Immutable
+data class ModuleButtonColors(
+    val containerColor: Color,
+    val contentColor: Color,
+)
+
+/** miuix's button shape and metrics, so an action row reads like any other miuix button. */
+internal object ModuleButtonDefaults {
+    val CornerRadius = 16.dp
+    val MinWidth = 58.dp
+    val MinHeight = 40.dp
+    val InsideMargin = PaddingValues(horizontal = 16.dp, vertical = 13.dp)
+    val IconOnlyMargin = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+
+    @Composable
+    fun colors(): ModuleButtonColors = ModuleButtonColors(
+        containerColor = MiuixTheme.colorScheme.secondaryContainer,
+        contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
+    )
+}
 
 data class ModuleButtonConfig(
     val icon: ImageVector,
@@ -42,18 +61,24 @@ data class ModuleButtonConfig(
     val onClick: () -> Unit,
     val onLongClick: (() -> Unit)? = null,
     val enabled: Boolean = true,
-    val colors: ButtonColors? = null,
+    val colors: ModuleButtonColors? = null,
 )
 
+/**
+ * One chip on a card - a module id, "update", "WebUI" and the like.
+ *
+ * It is a miuix surface coloured by the caller, so it sits on the card the way miuix's own tags do
+ * instead of carrying Material's tonal container and label style.
+ */
 @Composable
 fun ModuleLabel(text: String, containerColor: Color, contentColor: Color) {
-    Surface(color = containerColor, contentColor = contentColor, shape = RoundedCornerShape(8.dp)) {
+    Surface(color = containerColor, contentColor = contentColor, shape = ContinuousCornerShape(6.dp)) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MiuixTheme.textStyles.footnote2,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
 }
@@ -144,16 +169,25 @@ private fun AdaptiveButtonRowLayout(
     }
 }
 
+/**
+ * A card action, drawn the way a miuix button is: a squircle fill at miuix's corner radius and
+ * metrics, with the label in miuix's button style.
+ *
+ * It stays a hand-rolled surface rather than miuix's `Button` because the row measures every action
+ * with and without its label to decide how many fit, and a long press opens the shortcut dialog,
+ * which `Button` does not forward.
+ */
 @Composable
 fun ModuleActionButton(config: ModuleButtonConfig, iconOnly: Boolean, modifier: Modifier = Modifier) {
-    val colors = config.colors ?: ButtonDefaults.filledTonalButtonColors(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-    )
+    val colors = config.colors ?: ModuleButtonDefaults.colors()
+    val containerColor =
+        if (config.enabled) colors.containerColor else MiuixTheme.colorScheme.disabledSecondaryVariant
+    val contentColor =
+        if (config.enabled) colors.contentColor else MiuixTheme.colorScheme.disabledOnSecondaryVariant
     val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier
-            .defaultMinSize(ButtonDefaults.MinWidth, ButtonDefaults.MinHeight)
-            .clip(ButtonDefaults.filledTonalShape)
+            .defaultMinSize(ModuleButtonDefaults.MinWidth, ModuleButtonDefaults.MinHeight)
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
@@ -161,21 +195,31 @@ fun ModuleActionButton(config: ModuleButtonConfig, iconOnly: Boolean, modifier: 
                 onLongClick = config.onLongClick,
                 onClick = config.onClick,
             ),
-        shape = ButtonDefaults.filledTonalShape,
-        color = if (config.enabled) colors.containerColor else colors.disabledContainerColor,
-        contentColor = if (config.enabled) colors.contentColor else colors.disabledContentColor,
+        shape = ContinuousCornerShape(ModuleButtonDefaults.CornerRadius),
+        color = containerColor,
+        contentColor = contentColor,
     ) {
-        ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-            Row(
-                modifier = Modifier.padding(if (iconOnly) PaddingValues(12.dp) else ButtonDefaults.TextButtonContentPadding),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(config.icon, config.contentDescription, modifier = Modifier.size(20.dp))
-                if (!iconOnly) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(config.text)
-                }
+        Row(
+            modifier = Modifier.padding(
+                if (iconOnly) ModuleButtonDefaults.IconOnlyMargin else ModuleButtonDefaults.InsideMargin
+            ),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = config.icon,
+                contentDescription = config.contentDescription,
+                modifier = Modifier.size(20.dp),
+                tint = contentColor,
+            )
+            if (!iconOnly) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = config.text,
+                    style = MiuixTheme.textStyles.body2,
+                    color = contentColor,
+                    maxLines = 1,
+                )
             }
         }
     }

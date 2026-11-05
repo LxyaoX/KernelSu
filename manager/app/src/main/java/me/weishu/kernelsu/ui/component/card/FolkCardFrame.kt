@@ -7,8 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,6 +19,8 @@ import me.weishu.kernelsu.ui.component.material.folkPressScale
 import me.weishu.kernelsu.ui.component.module.LocalInsideSplicedGroup
 import me.weishu.kernelsu.ui.navigation3.navOrigin
 import me.weishu.kernelsu.ui.theme.ContinuousCornerShape
+import me.weishu.kernelsu.ui.theme.FolkMotion
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -49,7 +49,7 @@ fun FolkCardFrame(
             pressed -> 24.dp
             else -> 20.dp
         },
-        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        animationSpec = FolkMotion.smoothSpring(),
         label = "cardCorner",
     )
     val cardShape = ContinuousCornerShape(cardCorner)
@@ -62,7 +62,7 @@ fun FolkCardFrame(
             color = MiuixTheme.colorScheme.surfaceContainer,
             interactionSource = interactionSource,
         )
-        .animateContentSize(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
+        .animateContentSize(animationSpec = FolkMotion.smoothSpring())
         .folkPressScale(interactionSource)
         .combinedClickable(
             interactionSource = interactionSource,

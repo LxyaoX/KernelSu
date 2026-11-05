@@ -10,20 +10,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.ui.component.card.FolkCardFrame
 import me.weishu.kernelsu.ui.theme.LocalModuleDescriptionMaxLines
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** One chip on a module card: its text plus the pair of colours it is drawn with. */
 @Immutable
@@ -40,6 +39,9 @@ data class ModuleCardLabel(
  * The two screens that list modules - APM and kernel modules - describe their entries with
  * different fields but draw them identically. Everything below the description is the caller's
  * business, so the action rows stay in the screens that own their actions.
+ *
+ * Every piece of text here comes from the miuix type ramp, which is what the card frame around it
+ * is drawn from as well.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -89,15 +91,17 @@ fun ModuleCardShell(
                     }
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MiuixTheme.textStyles.headline1,
                         textDecoration = titleDecoration,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     subtitles.forEach { line ->
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = line,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             textDecoration = titleDecoration,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -111,8 +115,8 @@ fun ModuleCardShell(
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textDecoration = titleDecoration,
                     maxLines = descriptionMaxLines,
                     overflow = TextOverflow.Ellipsis,
@@ -122,8 +126,8 @@ fun ModuleCardShell(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = errorText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.error,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )

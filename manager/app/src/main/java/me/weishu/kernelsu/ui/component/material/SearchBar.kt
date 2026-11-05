@@ -51,8 +51,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -77,7 +75,6 @@ fun SearchAppBar(
     snackbarHostState: SnackbarHostState,
     navigationIcon: @Composable (() -> Unit)? = null,
     actions: @Composable (() -> Unit)? = null,
-    scrollBehavior: ScrollBehavior? = null,
     largeTitle: Boolean = true,
     topSearch: Boolean = false,
     searchBeforeActions: Boolean = false,
@@ -313,13 +310,3 @@ private fun SearchField(
         }
     }
 }
-
-/**
- * Kept for source compatibility: pages ask for a scroll behaviour to hand to the bar and to
- * `nestedScroll`. miuix's own behaviour is the only one in play now, so the Material one they used
- * to pass is ignored.
- */
-@Composable
-fun rememberSearchAppBarScrollBehavior(
-    @Suppress("UNUSED_PARAMETER") topAppBarScrollBehavior: ScrollBehavior? = null,
-): ScrollBehavior = MiuixScrollBehavior()
