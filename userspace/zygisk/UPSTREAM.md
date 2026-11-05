@@ -13,7 +13,7 @@ and the same list of files under `userspace/zygisk`.
 ## Pinned source
 
 - KernelSU: https://github.com/Rouyashiki/YukiSU
-  commit `3e8b8ecf6` (branch `main`), which is `a90d1fa9` plus the six zygisk
+  commit `c39dfd8be` (branch `main`), which is `a90d1fa9` plus the seven zygisk
   commits below. Imported paths: `userspace/zygisk/**`,
   `kernel/feature/yukizygisk/**`, `uapi/yukizygisk.h`.
 - YukiPLT: https://github.com/Rouyashiki/YukiPLT
@@ -27,6 +27,7 @@ and the same list of files under `userspace/zygisk`.
   | `5c260d1c6` | one lifetime rule for the managed fork and the cached hooks: a fork is published only after the hook registry is sealed, and the registry is retired before the fork is released |
   | `bb215474f` | native companion bindings are published through one atomic hand-off (`native_module_binding.hpp`) instead of being written field by field |
   | `8c122fc7a` | YukiPLT pin to `f8988f37` (Clang formatting, separate/minimised library artifacts, optional Full LTO for Release) |
+  | `413d1ea8c` | resident modules keep their linker registration: `hide_injection()` and `prepare_linker()` are gone, so Bionic TLS metadata stays valid for a module that keeps a `PT_TLS` and calls `dl_iterate_phdr` from a worker after specialization |
   | `551083a62` | **not taken**: it fixes `userspace/ksud/src/yzctl.cpp`, which this tree does not have (ksud is Rust and never calls `YZ_RELOAD`) |
 
   | upstream path | vendored path |
